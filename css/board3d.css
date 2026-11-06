@@ -277,8 +277,6 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .3));
 }
 .hs > div, .hs i { position: absolute; display: block; }
-.hs-body { background: linear-gradient(90deg, var(--hc), var(--hcl) 45%, var(--hc)); box-shadow: 0 0 0 2px #fff; }
-.hs-grid { left: 6px; right: 6px; top: 8px; bottom: 15px; background: radial-gradient(circle, #e0f2fe 2.6px, transparent 3.1px) 0 0 / 8px 9px; }
 .hs-door { bottom: 0; border-radius: 6px 6px 0 0; background: var(--hcd); }
 /* Đất nền: cờ màu chủ sở hữu cắm trên ụ đất */
 .hs-flag { width: 40px; height: 48px; }
@@ -286,31 +284,10 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .hs-flag .hs-pole { left: 17px; bottom: 5px; width: 4px; height: 42px; border-radius: 2px; background: linear-gradient(90deg, #e5e7eb, #9ca3af); }
 .hs-flag .hs-cloth { left: 21px; top: 1px; width: 19px; height: 16px; border-radius: 0 6px 6px 0; background: linear-gradient(160deg, var(--hcl), var(--hc) 60%, var(--hcd)); box-shadow: 0 0 0 1.5px #fff; animation: flagWave 1.8s ease-in-out infinite; transform-origin: 0 50%; }
 @keyframes flagWave { 0%, 100% { transform: skewY(0); } 50% { transform: skewY(6deg) scaleX(.92); } }
-/* Nhà cấp 1: mái tròn như cây nấm */
-.hs-1 { width: 50px; height: 46px; }
-.hs-1 .hs-roof { left: 1px; top: 2px; z-index: 1; width: 48px; height: 25px; border-radius: 24px 24px 9px 9px; background: linear-gradient(160deg, var(--hcl), var(--hc) 55%, var(--hcd)); box-shadow: 0 0 0 2px #fff; }
-.hs-1 .hs-wall { left: 7px; bottom: 0; width: 36px; height: 25px; border-radius: 8px 8px 6px 6px; background: linear-gradient(#fff, #e9eef5); box-shadow: inset 0 0 0 2px var(--hcd); }
-.hs-1 .hs-door { left: 7px; width: 9px; height: 13px; }
-.hs-1 .hs-win { left: 21px; top: 8px; width: 9px; height: 9px; border-radius: 50%; background: #7dd3fc; box-shadow: inset 0 0 0 2px #fff; }
-/* Tòa nhà */
-.hs-2 { width: 44px; height: 66px; }
-.hs-2 .hs-cap { left: 9px; top: 0; width: 26px; height: 16px; border-radius: 13px 13px 0 0; background: var(--hcd); box-shadow: 0 0 0 2px #fff; }
-.hs-2 .hs-body { left: 4px; bottom: 0; width: 36px; height: 54px; border-radius: 13px 13px 6px 6px; }
-.hs-2 .hs-door { left: 13px; width: 10px; height: 11px; }
-/* Khách sạn */
-.hs-3 { width: 64px; height: 84px; }
-.hs-3 .hs-wing { bottom: 0; width: 18px; height: 34px; border-radius: 9px 9px 4px 4px; background: linear-gradient(var(--hcl), var(--hc)); box-shadow: 0 0 0 2px #fff; }
-.hs-3 .hs-wing.l { left: 0; }
-.hs-3 .hs-wing.r { right: 0; }
-.hs-3 .hs-body { left: 12px; bottom: 0; z-index: 1; width: 40px; height: 70px; border-radius: 16px 16px 6px 6px; }
-.hs-3 .hs-door { left: 14px; width: 12px; height: 12px; }
-.hs-3 .hs-sign { left: 21px; top: 0; z-index: 2; width: 22px; height: 22px; border-radius: 50%; text-align: center; font: 800 14px/22px "Baloo 2", sans-serif; color: var(--hcd); background: #fff; box-shadow: 0 0 0 2px var(--hcd); }
-/* Biểu Tượng: tháp mái vòm vàng */
-.hs-4 { width: 60px; height: 114px; filter: drop-shadow(0 0 7px rgba(251, 191, 36, .9)) drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
-.hs-4 .hs-base { left: 2px; bottom: 0; z-index: 2; width: 56px; height: 14px; border-radius: 7px; background: linear-gradient(#fde68a, #f59e0b); box-shadow: 0 0 0 2px #fff; }
-.hs-4 .hs-body { left: 13px; bottom: 10px; z-index: 1; width: 34px; height: 72px; border-radius: 10px 10px 4px 4px; }
-.hs-4 .hs-dome { left: 9px; top: 16px; z-index: 2; width: 42px; height: 28px; border-radius: 21px 21px 7px 7px; background: radial-gradient(circle at 35% 30%, #fff7cc, #fbbf24 55%, #d97706); box-shadow: 0 0 0 2px #fff; }
-.hs-4 .hs-star { left: 18px; top: 0; z-index: 3; width: 24px; height: 20px; text-align: center; font-size: 20px; line-height: 20px; color: #fbbf24; text-shadow: 0 0 6px #fff, 0 0 2px #b45309; }
+/* Tòa nhà SVG góc nhìn nghiêng (Nhà cấp 1 → Biểu Tượng), xem js/ui/buildings.js */
+.hs-bld { line-height: 0; transform: scale(1.15); transform-origin: 50% 100%; }
+.hs-bld svg { display: block; overflow: visible; }
+.hs-bld.lv5 { filter: drop-shadow(0 0 7px rgba(251, 191, 36, .9)) drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
 /* Chòi nghỉ ở khu nghỉ dưỡng có chủ */
 .hs-cabana { width: 36px; height: 32px; }
 .hs-cabana .hs-roof { left: 0; top: 0; z-index: 1; width: 36px; height: 17px; border-radius: 18px 18px 5px 5px; background: repeating-linear-gradient(90deg, var(--hc) 0 6px, #fff 6px 12px); box-shadow: 0 0 0 2px #fff; }
