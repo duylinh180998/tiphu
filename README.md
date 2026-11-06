@@ -40,11 +40,11 @@ Cách hoạt động:
 - Người **mất kết nối** được chờ **20 giây**, sau đó máy tạm chơi thay; mở lại trang và bấm **Vào lại** trên menu để giành lại ghế.
 - Nếu **chủ phòng tải lại trang**, ván vẫn được lưu: chọn **Mở lại phòng** để mở lại với mã cũ, người chơi khác tự kết nối lại.
 - Gửi **biểu cảm** 👍 😂 😱 😡 🎉 🙏 bằng nút 😀 trên thanh công cụ.
-- Hai máy **cùng mạng Wi-Fi** thường nối thẳng được ngay. Hai máy **ở hai mạng khác nhau** (khác nhà, 4G, mạng công ty/trường học) thường cần **máy chủ chuyển tiếp TURN**. PeerJS đã ngừng cung cấp TURN miễn phí, nên cần tự cấu hình một lần:
-  1. Tạo tài khoản miễn phí tại [metered.ca — Open Relay](https://www.metered.ca/tools/openrelay/), tạo app và lấy **API key**.
-  2. Mở `js/config.js`, điền `TURN_CREDENTIALS_URL = 'https://<ten-app>.metered.live/api/v1/turn/credentials?apiKey=<API_KEY>'` (hoặc điền máy chủ TURN riêng vào `TURN_SERVERS`), rồi push lên `main`.
-  3. Lưu ý: key này nằm công khai trong mã trang web, người khác có thể dùng ké hạn mức miễn phí của bạn.
-- Khi không nối được, trò chơi sẽ báo rõ lỗi: không tìm thấy phòng (sai mã / phòng đã đóng), không kết nối được máy chủ tín hiệu, hoặc tìm thấy phòng nhưng không nối thẳng được (cần TURN).
+- **Hai đường kết nối, tự chọn:** khách thử nối thẳng tới chủ phòng (WebRTC) trước; nếu sau 10 giây không được (khác mạng, 4G, tường lửa…) thì tự chuyển sang **kênh chuyển tiếp** qua các máy chủ MQTT công cộng miễn phí (EMQX, HiveMQ, Eclipse, Mosquitto) bằng WebSocket bảo mật — đi qua được hầu hết mạng, **không cần tài khoản**. Nếu máy chủ PeerJS không dùng được, phòng vẫn mở được chỉ với kênh chuyển tiếp.
+- Kênh chuyển tiếp dùng máy chủ công cộng: người biết mã phòng có thể nhìn thấy dữ liệu ván đấu (chỉ là trạng thái bàn cờ). Chủ phòng vẫn kiểm tra mọi lựa chọn nhận được.
+- Thử ép dùng kênh chuyển tiếp: thêm `?net=relay` vào đường link. Dùng máy chủ MQTT riêng: `?mqtt=wss://may-chu-cua-ban/mqtt`.
+- Tùy chọn: có thể thêm máy chủ TURN (`TURN_CREDENTIALS_URL` / `TURN_SERVERS` trong `js/config.js`) để kết nối thẳng thành công nhiều hơn, nhưng không bắt buộc.
+- Khi không vào được, trò chơi báo lỗi: không tìm thấy phòng (sai mã / phòng đã đóng) hoặc không kết nối được Internet.
 - Tùy chọn nâng cao: dùng máy chủ tín hiệu riêng (gói npm [`peer`](https://www.npmjs.com/package/peer)) bằng tham số URL, ví dụ `?peer=may-chu-cua-ban.vn:9000&peerpath=/myapp&peersecure=1`.
 
 ## 🗺️ Bàn cờ 32 ô
@@ -149,7 +149,7 @@ js/
   core/                 util (định dạng tiền, lọc HTML) · session (hủy tác vụ khi đổi ván) · store (trạng thái + localStorage) · rng (ngẫu nhiên có seed) · bus (sự kiện)
   game/                 rules (truy vấn luật) · engine (vòng lặp lượt chơi) · players (điều phối quyết định: máy / người trên máy này / người từ xa) · ai · text
   ui/                   board3d · models (nhà/tòa nhà/tháp CSS 3D) · tokens · dice · hud · dialogs · select · fx · audio · layout · screens · view (lớp trình bày, phát sóng sự kiện khi chơi trực tuyến) · ask · prompt · dom
-  net/                  peer (tải PeerJS, mở kết nối) · host (chủ phòng: phòng chờ, phát sóng, hỏi quyết định từ xa) · guest (người vào phòng: đồng bộ, trả lời, tự kết nối lại)
+  net/                  peer (tải PeerJS, mở kết nối) · relay (kênh chuyển tiếp MQTT dự phòng) · host (chủ phòng: phòng chờ, phát sóng, hỏi quyết định từ xa) · guest (người vào phòng: đồng bộ, trả lời, tự kết nối lại)
 ```
 
 Thiết kế chính:

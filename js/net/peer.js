@@ -5,6 +5,7 @@
  */
 import {
   PEERJS_URL, ROOM_PREFIX, ROOM_CODE_LENGTH, ROOM_CODE_ALPHABET, STUN_SERVERS, TURN_CREDENTIALS_URL, TURN_SERVERS,
+  P2P_TIMEOUT_MS,
 } from '../config.js';
 import { randomCode } from '../core/util.js';
 
@@ -27,9 +28,6 @@ export function loadPeerJS() {
   });
   return loading;
 }
-
-/** Có cấu hình máy chủ chuyển tiếp TURN hay không */
-export const hasTurn = () => TURN_SERVERS.length > 0 || !!TURN_CREDENTIALS_URL;
 
 let turnFetch = null;
 
@@ -151,7 +149,9 @@ export function connectTo(peer, code) {
         } catch (e) {
           /* đã đóng */
         }
-        reject(new Error(errMessage(err)));
+        const e2 = new Error(errMessage(err));
+        e2.type = err.type;
+        reject(e2);
       } else {
         resolve(conn);
       }
@@ -159,12 +159,10 @@ export function connectTo(peer, code) {
     const onPeerErr = (err) => {
       if (err && (err.type === 'peer-unavailable' || err.type === 'network' || err.type === 'server-error')) finish(err);
     };
-    const timer = setTimeout(() => {
-      const message = hasTurn()
-        ? 'Hết thời gian kết nối tới phòng. Mạng của bạn có thể chặn kết nối ngang hàng (WebRTC) — hãy thử mạng khác.'
-        : 'Đã tìm thấy phòng nhưng không nối thẳng được tới máy chủ phòng (hai máy ở hai mạng khác nhau). Trò chơi cần máy chủ chuyển tiếp TURN — xem mục "Chơi trực tuyến" trong README.';
-      finish({ type: 'timeout', message });
-    }, 20000);
+    const timer = setTimeout(
+      () => finish({ type: 'timeout', message: 'Không nối thẳng được tới máy chủ phòng (mạng chặn kết nối ngang hàng).' }),
+      P2P_TIMEOUT_MS
+    );
     conn.on('open', () => finish(null));
     conn.on('error', (err) => finish(err));
     peer.on('error', onPeerErr);
