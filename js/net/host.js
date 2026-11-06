@@ -273,6 +273,15 @@ function attachPeer() {
 
 function heartbeat() {
   if (!room) return;
+  // Mất kết nối tới máy chủ tín hiệu thì người mới không tìm thấy phòng: tự nối lại
+  const peer = room.peer;
+  if (peer && peer.disconnected && !peer.destroyed) {
+    try {
+      peer.reconnect();
+    } catch (e) {
+      /* thử lại ở nhịp sau */
+    }
+  }
   const now = Date.now();
   room.conns.forEach((entry, conn) => {
     if (now - entry.last > HEARTBEAT_TIMEOUT_MS) {
