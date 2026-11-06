@@ -1,0 +1,76 @@
+/**
+ * Cấu hình & hằng số luật chơi (đơn vị tiền: nghìn đô — K).
+ */
+
+export const SAVE_KEY = 'cotyphu.save.v1';
+export const SETTINGS_KEY = 'cotyphu.settings.v1';
+export const NET_KEY = 'cotyphu.net.v1';
+export const SAVE_VERSION = 1;
+
+// ---------- Bàn cờ ----------
+export const TILE_COUNT = 32;
+export const START_TILE = 0;
+export const ISLAND_TILE = 8;
+export const FESTIVAL_TILE = 16;
+export const TOUR_TILE = 24;
+export const TAX_TILE = 30;
+
+// ---------- Luật chơi ----------
+export const START_SALARY = 300;
+export const ISLAND_FEE = 200;
+export const ISLAND_TURNS = 3;
+export const TOUR_FEE = 50;
+export const RESORT_PRICE = 200;
+export const RESORT_RENTS = [0, 50, 100, 200, 400];
+export const TAX_RATE = 0.1;
+export const SELL_RATE = 0.5;
+export const BUYOUT_RATE = 2;
+export const FESTIVAL_MULTS = [2, 3, 4];
+export const INFLATION_START = 40; // từ vòng 41 tiền thuê bắt đầu tăng
+export const INFLATION_STEP = 0.05; // +5% mỗi vòng
+export const MAX_LOG = 160;
+
+/** Chi phí xây từng cấp và tiền thuê từng cấp, tính theo giá gốc của thành phố */
+export const COST_MULT = [0, 1, 0.5, 0.5, 1];
+export const RENT_MULT = [0, 0.35, 0.9, 1.75, 3.2];
+
+export const LEVEL_ICONS = ['', '🏠', '🏘️', '🏢', '🗼'];
+export const LEVEL_NAMES = ['Đất trống', 'Nhà cấp 1', 'Nhà cấp 2', 'Nhà cấp 3', 'Biểu Tượng'];
+
+// ---------- Người chơi ----------
+export const MAX_PLAYERS = 4;
+export const PLAYER_COLORS = ['#ff4d6d', '#3b82f6', '#22c55e', '#facc15'];
+export const AVATARS = ['🦊', '🐼', '🐯', '🐸', '🐵', '🐧', '🦁', '🐨', '🐙', '🦄', '🐲', '🐰', '🐻', '🐱', '🐶', '🦉'];
+export const DEFAULT_SLOTS = [
+  { type: 'human', name: 'Bạn', avatar: '🦊' },
+  { type: 'bot', name: 'Minh', avatar: '🐼' },
+  { type: 'bot', name: 'Lan', avatar: '🐯' },
+  { type: 'bot', name: 'Hùng', avatar: '🐸' },
+];
+export const BOT_NAMES = ['Minh', 'Lan', 'Hùng', 'Mai', 'Tuấn', 'Vy'];
+export const EMOTES = ['👍', '😂', '😱', '😡', '🎉', '🙏'];
+
+// ---------- Tốc độ hoạt ảnh ----------
+export const SPEEDS = {
+  slow: { label: 'Chậm', step: 300, dice: 1150, bot: 1000, banner: 1200, fly: 950, card: 2100, fx: 1 },
+  normal: { label: 'Thường', step: 200, dice: 900, bot: 650, banner: 950, fly: 780, card: 1600, fx: 1 },
+  fast: { label: 'Nhanh', step: 110, dice: 600, bot: 320, banner: 650, fly: 540, card: 1000, fx: 1 },
+  turbo: { label: 'Siêu tốc', step: 0, dice: 0, bot: 0, banner: 0, fly: 0, card: 0, fx: 0 },
+};
+export const SPEED_ORDER = ['slow', 'normal', 'fast', 'turbo'];
+
+// ---------- Trực tuyến ----------
+export const NET_PROTOCOL = 1;
+export const ROOM_PREFIX = 'cotyphu-v1-';
+export const ROOM_CODE_LENGTH = 6;
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const PEERJS_URL = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js';
+export const DECISION_TIMEOUT_MS = 45000; // thời gian suy nghĩ mỗi quyết định khi chơi trực tuyến
+export const SELL_TIMEOUT_MS = 75000;
+export const DISCONNECT_GRACE_MS = 20000; // chờ người mất kết nối trước khi máy chơi thay
+export const HEARTBEAT_MS = 3000;
+export const HEARTBEAT_TIMEOUT_MS = 12000;
+
+// ---------- Góc nhìn 3D ----------
+export const VIEW_TILT = 57; // độ nghiêng (rotateX)
+export const VIEW_SPIN = -45; // xoay bàn cờ thành hình thoi (rotateZ)

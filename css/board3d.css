@@ -1,0 +1,428 @@
+/* =========================================================================
+   CỜ TỶ PHÚ — board3d.css
+   Bàn cờ 9x9 kích thước cố định (1064px) đặt trong "camera" được thu phóng
+   bằng --zoom. Góc nhìn 3D: rotateX(--tilt) rotateZ(-45deg) → hình thoi isometric.
+   Các "biển đứng" (.bb, .tk-bill) xoay ngược lại để luôn quay mặt về camera.
+   ========================================================================= */
+
+#scene { position: fixed; inset: 0; overflow: hidden; z-index: 1; }
+body.docked #scene { position: relative; width: 100%; height: var(--scene-h); overflow: visible; }
+
+#camera {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1064px;
+  height: 1064px;
+  margin: -532px 0 0 -532px;
+  transform: translateY(var(--cam-y)) scale(var(--zoom));
+  transition: transform .7s cubic-bezier(.3, .7, .2, 1);
+}
+
+.board {
+  position: relative;
+  width: 1064px;
+  height: 1064px;
+  display: grid;
+  grid-template-columns: 150px repeat(7, 100px) 150px;
+  grid-template-rows: 150px repeat(7, 100px) 150px;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 24px;
+  transform-style: preserve-3d;
+  transition: transform .7s cubic-bezier(.3, .7, .2, 1);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(129, 140, 248, .22), transparent 62%),
+    linear-gradient(145deg, #2a3172, #161b4d 60%, #1d1650);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .07), 0 40px 90px rgba(0, 0, 0, .55);
+}
+.view-3d .board { transform: rotateX(var(--tilt)) rotateZ(-45deg); }
+.view-2d .board { transform: none; }
+/* Độ dày bàn cờ (chỉ thấy ở góc nhìn 3D) */
+.view-3d .board::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  height: 26px;
+  transform-origin: top;
+  transform: rotateX(-90deg);
+  border-radius: 0 0 20px 20px;
+  background: linear-gradient(#141a4f, #070a22);
+}
+.view-3d .board::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 100%;
+  transform-origin: left;
+  transform: rotateY(90deg);
+  background: linear-gradient(90deg, #060920, #1b2160);
+}
+
+/* ---------- Ô ---------- */
+.tile {
+  position: relative;
+  transform-style: preserve-3d;
+  border-radius: 9px;
+  color: #1e2148;
+  background: linear-gradient(160deg, #fdfaf3, #ebe4d6);
+  box-shadow: inset 0 0 0 1px rgba(30, 33, 72, .12);
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .25s ease, filter .25s ease;
+}
+.view-3d .tile { transform: translateZ(7px); }
+.view-3d .tile::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  height: 7px;
+  transform-origin: top;
+  transform: rotateX(-90deg);
+  border-radius: 0 0 6px 6px;
+  background: #ada594;
+}
+.view-3d .tile::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 100%;
+  transform-origin: left;
+  transform: rotateY(90deg);
+  background: #cbc3b2;
+}
+.view-3d .tile:hover { transform: translateZ(13px); }
+.view-2d .tile:hover { transform: scale(1.03); z-index: 5; }
+
+.tile.owned {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--owner) 16%, #fdfaf3), color-mix(in srgb, var(--owner) 9%, #ebe4d6));
+  box-shadow: inset 0 0 0 4px var(--owner);
+}
+.tile.landmark { box-shadow: inset 0 0 0 4px var(--owner), 0 0 26px 4px rgba(251, 191, 36, .75); }
+.tile.festival { box-shadow: inset 0 0 0 4px var(--owner, #ec4899), 0 0 30px 6px rgba(236, 72, 153, .85); }
+
+/* Mặt chữ: khung 100x150, "trên" của khung = phía xa camera. Cạnh trái/phải xoay 90°. */
+.tile-face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 9px;
+  pointer-events: none;
+}
+.view-3d .s0 .tile-face, .view-3d .s2 .tile-face { transform: translate(-50%, -50%) rotate(90deg); }
+.view-3d .s1 .band, .view-3d .s2 .band { order: 9; }
+.band {
+  position: relative;
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--g), color-mix(in srgb, var(--g) 65%, #000));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
+}
+.band-resort { background: linear-gradient(135deg, #38bdf8, #0369a1); overflow: hidden; }
+.band-resort::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(-30deg, transparent 0 7px, rgba(255, 255, 255, .2) 7px 11px);
+}
+.lvl { font-size: 22px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
+.view-3d .lvl { display: none; }
+.label {
+  flex: none;
+  margin-top: auto;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 4px 8px;
+  text-align: center;
+}
+.label .name {
+  font-weight: 800;
+  font-size: calc(15px * var(--fz));
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.label .name.long { font-size: calc(13.5px * var(--fz)); letter-spacing: -.01em; }
+.label .price {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 800;
+  font-size: calc(13px * var(--fz));
+  line-height: 1.3;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: #252a5e;
+  white-space: nowrap;
+}
+.label .price.rent { color: var(--ink-dark); background: var(--owner); box-shadow: 0 0 10px color-mix(in srgb, var(--owner) 60%, transparent); }
+.pav { font-size: .95em; }
+.label.special { margin: auto 0; gap: 6px; }
+.label .icon { font-size: calc(34px * var(--fz)); line-height: 1; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .35)); }
+.label .sub { font-size: calc(11px * var(--fz)); font-weight: 700; opacity: .9; }
+.t-chance { background: linear-gradient(160deg, #8b5cf6, #4c1d95); color: #fff; }
+.t-tax { background: linear-gradient(160deg, #f43f5e, #7f1d1d); color: #fff; }
+.t-chance .name, .t-tax .name { font-family: "Baloo 2", "Be Vietnam Pro", sans-serif; letter-spacing: .03em; }
+
+/* Chế độ 2D: mặt chữ nằm ngang, dải màu hướng vào trong bàn cờ */
+.view-2d .tile-face { width: 100%; height: 100%; }
+.view-2d .s0 .tile-face { flex-direction: row-reverse; }
+.view-2d .s2 .tile-face { flex-direction: row; }
+.view-2d .s1 .tile-face { flex-direction: column-reverse; }
+.view-2d .s3 .tile-face { flex-direction: column; }
+.view-2d .s0 .band, .view-2d .s2 .band { flex: 0 0 34px; }
+.view-2d .label { margin: auto; min-height: 0; }
+.view-2d .s0 .label, .view-2d .s2 .label { flex: 1; }
+
+/* 4 ô góc */
+.tile.corner { color: #fff; }
+.t-start { background: radial-gradient(circle at 30% 25%, #6ee7b7, #059669 55%, #064e3b); }
+.t-island { background: radial-gradient(circle at 65% 30%, #a5f3fc, #0891b2 55%, #164e63); }
+.t-festival { background: radial-gradient(circle at 35% 30%, #f9a8d4, #db2777 55%, #831843); }
+.t-tour { background: radial-gradient(circle at 65% 65%, #bfdbfe, #2563eb 55%, #1e3a8a); }
+.corner-face { width: 100%; height: 100%; }
+.corner-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-align: center;
+}
+.view-3d .corner-label { justify-content: flex-end; padding-bottom: 12px; transform: rotate(45deg); }
+.view-3d .corner-label .icon { display: none; }
+.corner-label .icon { font-size: calc(48px * var(--fz)); line-height: 1; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .4)); }
+.corner-label .name {
+  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-weight: 800;
+  font-size: calc(19px * var(--fz));
+  line-height: 1.02;
+  letter-spacing: .02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .45);
+}
+.corner-label .sub { font-size: calc(12px * var(--fz)); font-weight: 700; padding: 1px 9px; border-radius: 999px; background: rgba(0, 0, 0, .28); }
+.corner-prop { position: absolute; left: 62%; top: 38%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(4px); pointer-events: none; }
+.view-2d .corner-prop { display: none; }
+
+/* ---------- Biển đứng luôn quay mặt về camera ---------- */
+.bb-anchor { position: absolute; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none; }
+.bb { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; transform-style: preserve-3d; }
+.view-3d .bb { transform: rotateZ(45deg) rotateX(calc(-1 * var(--tilt))); }
+.bb-in { position: absolute; left: 0; bottom: 0; transform: translateX(-50%); white-space: nowrap; line-height: 1; }
+.bb-prop { font-size: 78px; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .35)); }
+.bb-sm { font-size: 30px; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
+.bb-fest {
+  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: #fff;
+  padding: 5px 12px 3px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ec4899, #f59e0b);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, .6), 0 0 0 3px #fff;
+  animation: festBob 1.6s ease-in-out infinite;
+}
+
+/* ---------- Khu đất đặt công trình 3D (phía xa camera của ô) ---------- */
+.lot { position: absolute; width: 56px; height: 56px; transform-style: preserve-3d; pointer-events: none; }
+.s0 .lot, .s2 .lot { left: 88px; top: 22px; }
+.s1 .lot, .s3 .lot { left: 22px; top: 6px; }
+.view-2d .lot { display: none; }
+.m3 { position: absolute; transform-style: preserve-3d; }
+.m3 > i { position: absolute; left: 0; top: 0; display: block; }
+.fest-flag { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(64px); pointer-events: none; }
+.view-2d .fest-flag { left: 26px; top: 20px; transform: none; }
+.view-2d .bb-fest { font-size: 18px; padding: 3px 9px 2px; }
+
+/* ---------- Trạng thái chọn ô ---------- */
+/* Chỉ làm tối mặt ô (filter trên phần tử 3D sẽ làm phẳng công trình trên ô) */
+.board.selecting .tile:not(.selectable) .tile-face { filter: brightness(.42) saturate(.55); }
+.board.selecting .tile:not(.selectable) { box-shadow: none; }
+.board.selecting .tile.selectable { animation: selectGlow 1s ease-in-out infinite; z-index: 7; }
+.view-3d .board.selecting .tile.selectable { transform: translateZ(18px); }
+.tile.chosen { animation: chosenGlow .8s ease-in-out infinite; z-index: 8; }
+.view-3d .tile.chosen { transform: translateZ(20px); }
+.tile.pulse .tile-face { animation: landPulse .75s ease-out; }
+
+/* ---------- Trung tâm bàn cờ ---------- */
+#board-center {
+  grid-row: 2 / 9;
+  grid-column: 2 / 9;
+  position: relative;
+  transform-style: preserve-3d;
+  border-radius: 18px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 59px, rgba(255, 255, 255, .035) 59px 60px),
+    repeating-linear-gradient(90deg, transparent 0 59px, rgba(255, 255, 255, .035) 59px 60px),
+    radial-gradient(circle at 50% 50%, #3d43a8 0%, #262b6e 55%, #1b1f55 100%);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .07), inset 0 0 60px rgba(0, 0, 0, .35);
+}
+.floor-logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-weight: 800;
+  font-size: 92px;
+  line-height: 1;
+  letter-spacing: .05em;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, .1);
+  text-shadow: 0 0 40px rgba(167, 139, 250, .25);
+  pointer-events: none;
+}
+.view-3d .floor-logo { transform: translate(-50%, -50%) translate(150px, -150px) rotate(45deg); }
+.view-2d .floor-logo { transform: translate(-50%, -50%) translateY(-220px); font-size: 70px; }
+.floor-sub { display: block; text-align: center; font-size: 30px; letter-spacing: .3em; margin-top: 4px; }
+
+/* ---------- Xúc xắc 3D ---------- */
+#dice-tray { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.die { position: absolute; width: 64px; height: 64px; transform-style: preserve-3d; transform: translateZ(32px); transition: left .4s, top .4s; }
+.die::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(rgba(0, 0, 0, .5), transparent 70%);
+  transform: translateZ(-31px) scale(1.25);
+}
+.die-0 { left: -98px; top: -98px; }
+.die-1 { left: 6px; top: 6px; }
+.view-2d .die-0 { left: -86px; top: -32px; }
+.view-2d .die-1 { left: 22px; top: -32px; }
+.die-toss { width: 100%; height: 100%; transform-style: preserve-3d; }
+#dice-tray.rolling .die-toss { animation: toss3d var(--dice-ms) ease-out; }
+#dice-tray.rolling .die-1 .die-toss { animation-delay: 40ms; }
+.cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform var(--dice-ms) cubic-bezier(.17, .84, .3, 1.08); }
+.face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 13%;
+  border-radius: 18%;
+  background: linear-gradient(145deg, #ffffff, #dfe5f1);
+  box-shadow: inset 0 0 8px rgba(15, 23, 42, .22), inset 0 -3px 0 rgba(15, 23, 42, .12);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.face.f1 { transform: rotateY(0deg) translateZ(32px); }
+.face.f2 { transform: rotateY(90deg) translateZ(32px); }
+.face.f3 { transform: rotateX(90deg) translateZ(32px); }
+.face.f4 { transform: rotateX(-90deg) translateZ(32px); }
+.face.f5 { transform: rotateY(-90deg) translateZ(32px); }
+.face.f6 { transform: rotateY(180deg) translateZ(32px); }
+.pip { align-self: center; justify-self: center; width: 78%; height: 78%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #64748b, #0f172a 70%); }
+.pip.red { background: radial-gradient(circle at 35% 30%, #fda4af, #e11d48 65%); }
+.face.f1 .pip { width: 95%; height: 95%; }
+#dice-tray.double .face { box-shadow: inset 0 0 0 3px var(--gold), inset 0 0 12px rgba(251, 191, 36, .6); }
+
+/* ---------- Quân cờ ---------- */
+#token-layer { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+.token {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transition: transform var(--step-ms) cubic-bezier(.3, .7, .4, 1), opacity .5s ease;
+  will-change: transform;
+}
+.tk-shadow {
+  position: absolute;
+  left: -18px;
+  top: -12px;
+  width: 36px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(rgba(0, 0, 0, .5), transparent 70%);
+  transform: translateZ(8px);
+}
+.view-2d .tk-shadow { display: none; }
+.tk-bill { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; transform-origin: 0 0; }
+.view-3d .tk-bill { transform: translateZ(9px) rotateZ(45deg) rotateX(calc(-1 * var(--tilt))); }
+.view-2d .tk-bill { transform: translateZ(3px); }
+.tk-bob { position: absolute; left: -23px; bottom: 0; width: 46px; height: 74px; }
+.view-2d .tk-bob { bottom: -23px; height: 46px; }
+.tk-pawn { position: absolute; inset: 0; }
+.tk-head {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+  line-height: 1;
+  background: radial-gradient(circle at 32% 28%, #fff, var(--pc) 55%, color-mix(in srgb, var(--pc) 60%, #000));
+  box-shadow: 0 0 0 3px #fff, 0 6px 10px rgba(0, 0, 0, .45);
+}
+.tk-body {
+  position: absolute;
+  left: 10px;
+  top: 30px;
+  width: 26px;
+  height: 44px;
+  border-radius: 0 0 8px 8px;
+  clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 55%, #000), var(--pc), color-mix(in srgb, var(--pc) 65%, #000));
+}
+.view-2d .tk-body { display: none; }
+.token.active .tk-head { box-shadow: 0 0 0 3px #fff, 0 0 20px 6px var(--pc), 0 6px 10px rgba(0, 0, 0, .45); }
+.token.active { z-index: 2; }
+.token.hop .tk-bob { animation: tokenHop var(--step-ms) ease-out; }
+.token.flying { transition-duration: var(--fly-ms); transition-timing-function: cubic-bezier(.45, 0, .2, 1); }
+.token.flying .tk-bob { animation: tokenFly var(--fly-ms) ease-in-out; }
+.token.gone { opacity: 0; }
+
+/* ---------- Hiệu ứng nổi trên ô ---------- */
+.fx-anchor { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none; }
+.fx-pop {
+  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-weight: 800;
+  font-size: 36px;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, .75);
+  animation: fxRise 1.5s ease-out forwards;
+}
+.fx-pop.gain { color: #34d399; }
+.fx-pop.loss { color: #fb7185; }
+.fx-pop.build { font-size: 50px; }
+.fx-pop.big { font-size: 66px; animation-name: fxBig; }
+
+@keyframes tokenHop { 0% { transform: translateY(0); } 45% { transform: translateY(-34px) scale(1.06); } 100% { transform: translateY(0); } }
+@keyframes tokenFly { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-150px) scale(1.4); } 100% { transform: translateY(0) scale(1); } }
+@keyframes toss3d { 0% { transform: translateZ(0); } 28% { transform: translateZ(130px); } 58% { transform: translateZ(0); } 74% { transform: translateZ(26px); } 100% { transform: translateZ(0); } }
+@keyframes selectGlow { 0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 14px 3px rgba(255, 255, 255, .6); } 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 28px 8px rgba(251, 191, 36, .8); } }
+@keyframes chosenGlow { 0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 18px 5px rgba(255, 255, 255, .7); } 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 30px 10px rgba(251, 191, 36, .85); } }
+@keyframes landPulse { 0% { box-shadow: inset 0 0 0 0 rgba(255, 255, 255, .9), inset 0 0 0 0 rgba(251, 191, 36, .8); } 100% { box-shadow: inset 0 0 0 40px rgba(255, 255, 255, 0), inset 0 0 0 6px rgba(251, 191, 36, 0); } }
+@keyframes festBob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+@keyframes fxRise { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 18% { opacity: 1; transform: translateY(-20px) scale(1.15); } 100% { opacity: 0; transform: translateY(-110px) scale(1); } }
+@keyframes fxBig { 0% { opacity: 0; transform: scale(.3) rotate(-18deg); } 25% { opacity: 1; transform: translateY(-30px) scale(1.25) rotate(5deg); } 70% { opacity: 1; transform: translateY(-60px) scale(1.05); } 100% { opacity: 0; transform: translateY(-120px) scale(1); } }
