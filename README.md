@@ -18,11 +18,11 @@ python3 -m http.server 8000
 
 rồi mở `http://localhost:8000`.
 
-**Triển khai lên GitHub Pages:**
+**Triển khai lên GitHub Pages** (repo đã có sẵn workflow `.github/workflows/deploy-pages.yml`):
 
-1. Push toàn bộ repo (gồm `index.html`, thư mục `css/` và `js/`) lên nhánh `main`.
-2. Vào **Settings → Pages**, mục *Build and deployment* chọn **Deploy from a branch**, nhánh `main`, thư mục `/ (root)`.
-3. Sau khoảng 1 phút, game có tại `https://<tên-tài-khoản>.github.io/<tên-repo>/`.
+1. Vào **Settings → Pages**, mục *Build and deployment → Source* chọn **GitHub Actions** (chỉ cần làm 1 lần).
+2. Mỗi lần nhánh `main` thay đổi, workflow tự đóng gói và deploy. Cũng có thể chạy tay ở tab **Actions → Deploy GitHub Pages → Run workflow**.
+3. Sau khoảng 1 phút, game có tại `https://<tên-tài-khoản>.github.io/<tên-repo>/` (repo này: https://duylinh180998.github.io/tiphu/).
 
 > TailwindCSS, font chữ và thư viện PeerJS (chỉ tải khi chơi trực tuyến) được lấy qua CDN nên cần Internet. Nếu CDN Tailwind không tải được, các file CSS trong `css/` vẫn chứa toàn bộ giao diện nên game vẫn chơi được.
 
