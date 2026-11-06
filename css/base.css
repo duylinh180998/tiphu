@@ -1,0 +1,138 @@
+/* =========================================================================
+   CỜ TỶ PHÚ — base.css: biến giao diện, nền, nút, nhãn, hiệu ứng dùng chung
+   ========================================================================= */
+:root {
+  --bg-0: #060a1c;
+  --bg-1: #0d1233;
+  --bg-2: #1a1446;
+  --ink: #eef2ff;
+  --ink-dark: #0b1026;
+  --muted: #9aa6d1;
+  --gold: #fbbf24;
+  --good: #34d399;
+  --bad: #fb7185;
+  --vh: 100vh;
+  --zoom: 0.8;
+  --cam-y: 0px;
+  --scene-h: 100%;
+  --fz: 1;
+  --ov-w: 520px;
+  --ov-up: 90px;
+  --ov-down: 60px;
+  --step-ms: 200ms;
+  --fly-ms: 780ms;
+  --dice-ms: 900ms;
+  --tilt: 57deg;
+}
+@supports (height: 100dvh) {
+  :root { --vh: 100dvh; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(70vmax 50vmax at 50% 42%, rgba(76, 64, 190, .55), transparent 62%),
+    radial-gradient(50vmax 40vmax at 8% 6%, rgba(124, 58, 237, .32), transparent 60%),
+    radial-gradient(50vmax 36vmax at 94% 92%, rgba(14, 165, 233, .22), transparent 60%),
+    linear-gradient(170deg, var(--bg-0), var(--bg-2) 55%, var(--bg-0));
+  background-color: var(--bg-0);
+  background-attachment: fixed;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+body.docked { overflow-y: auto; }
+input, select, textarea { -webkit-user-select: text; user-select: text; }
+button { font-family: inherit; }
+.hidden { display: none !important; }
+
+/* ---------- Nút ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45em;
+  border: 0;
+  border-radius: 999px;
+  padding: .62em 1.25em;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.15;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(255, 255, 255, .1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+  transition: transform .12s ease, filter .15s ease, box-shadow .2s ease, opacity .2s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.12); }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(.98); }
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.4); }
+.btn-primary { background: linear-gradient(135deg, #f43f5e, #f97316); box-shadow: 0 6px 18px rgba(244, 63, 94, .38), inset 0 -3px 0 rgba(0, 0, 0, .18); }
+.btn-gold { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #2a1700; box-shadow: 0 6px 18px rgba(245, 158, 11, .35), inset 0 -3px 0 rgba(0, 0, 0, .14); }
+.btn-blue { background: linear-gradient(135deg, #3b82f6, #06b6d4); box-shadow: 0 6px 18px rgba(59, 130, 246, .32), inset 0 -3px 0 rgba(0, 0, 0, .16); }
+.btn-green { background: linear-gradient(135deg, #059669, #22c55e); box-shadow: 0 6px 18px rgba(34, 197, 94, .3), inset 0 -3px 0 rgba(0, 0, 0, .16); }
+.btn-danger { background: linear-gradient(135deg, #dc2626, #9f1239); box-shadow: 0 6px 18px rgba(220, 38, 38, .35), inset 0 -3px 0 rgba(0, 0, 0, .18); }
+.btn-ghost { background: rgba(255, 255, 255, .08); }
+.btn-sm { font-size: 12px; padding: .45em .9em; }
+.btn-big {
+  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-weight: 800;
+  letter-spacing: .04em;
+  padding: .55em 1.7em .45em;
+  animation: bigPulse 1.8s ease-in-out infinite;
+}
+.btn-meta { font-weight: 600; font-size: .86em; opacity: .9; }
+
+/* ---------- Nhãn ---------- */
+.chip {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+  white-space: nowrap;
+}
+.chip-gold { background: rgba(251, 191, 36, .22); color: #fde68a; }
+.chip-sea { background: rgba(56, 189, 248, .22); color: #bae6fd; }
+.chip-bad { background: rgba(244, 63, 94, .25); color: #fecdd3; }
+.pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(10, 14, 40, .62);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+.pill-fest { background: linear-gradient(135deg, rgba(236, 72, 153, .5), rgba(245, 158, 11, .45)); }
+.pill-infl { background: linear-gradient(135deg, rgba(239, 68, 68, .55), rgba(249, 115, 22, .42)); animation: pop .4s ease; }
+.pill-room { cursor: pointer; pointer-events: auto; background: linear-gradient(135deg, rgba(16, 185, 129, .45), rgba(6, 182, 212, .38)); }
+.dots::after { content: ''; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }
+.pn { font-weight: 800; }
+.tn { color: #fff; }
+.dbl { color: var(--gold); }
+.noscript { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; font-size: 18px; background: var(--bg-0); z-index: 200; }
+
+/* ---------- Keyframes dùng chung ---------- */
+@keyframes bigPulse { 0%, 100% { box-shadow: 0 6px 18px rgba(244, 63, 94, .38), 0 0 0 0 rgba(244, 63, 94, .45), inset 0 -3px 0 rgba(0, 0, 0, .18); } 50% { box-shadow: 0 6px 18px rgba(244, 63, 94, .38), 0 0 0 10px rgba(244, 63, 94, 0), inset 0 -3px 0 rgba(0, 0, 0, .18); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes popIn { from { opacity: 0; transform: translateY(10px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+@keyframes blink { 50% { opacity: .2; } }
+@keyframes brandSpin { 0%, 70%, 100% { transform: rotate(0); } 80% { transform: rotate(200deg) scale(1.1); } 90% { transform: rotate(340deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .btn-big { animation: none !important; }
+}

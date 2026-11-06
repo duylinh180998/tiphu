@@ -1,0 +1,415 @@
+/* =========================================================================
+   CỜ TỶ PHÚ — hud.css: thẻ người chơi, lớp phủ giữa bàn cờ, nhật ký,
+   thanh công cụ, biểu cảm, thông báo; bố cục "wide" (màn ngang) và "docked" (màn hẹp)
+   ========================================================================= */
+
+#hud { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+#panels { position: absolute; inset: 0; pointer-events: none; }
+body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game) #overlay-bottom, body:not(.in-game) #overlay-top { display: none; }
+
+/* ---------- Thẻ người chơi ---------- */
+.pcard {
+  position: absolute;
+  width: 252px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px 13px 10px;
+  border-radius: 18px;
+  pointer-events: auto;
+  cursor: pointer;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--pc) 26%, rgba(18, 22, 58, .92)), rgba(12, 15, 42, .92) 72%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pc) 55%, transparent), 0 10px 28px rgba(0, 0, 0, .4);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform .2s ease, box-shadow .3s ease, filter .3s ease;
+}
+.pcard:hover { transform: translateY(-2px); }
+.pcard.slot-0 { left: 14px; bottom: 14px; }
+.pcard.slot-1 { left: 14px; top: 14px; }
+.pcard.slot-2 { right: 14px; top: 14px; }
+.pcard.slot-3 { right: 14px; bottom: 14px; }
+.pcard.empty { cursor: default; align-items: center; justify-content: center; min-height: 64px; background: rgba(255, 255, 255, .03); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); }
+.pc-empty { font-size: 13px; color: rgba(255, 255, 255, .3); }
+.pcard.active { box-shadow: inset 0 0 0 2.5px var(--pc), 0 0 26px color-mix(in srgb, var(--pc) 70%, transparent), 0 10px 28px rgba(0, 0, 0, .4); animation: activeCard 1.8s ease-in-out infinite; }
+.pcard.me .pc-name::after { content: 'BẠN'; margin-left: 6px; font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; color: var(--ink-dark); background: var(--pc); vertical-align: middle; }
+.pcard.offline { filter: saturate(.4) brightness(.8); }
+.pcard.bankrupt { filter: grayscale(1) brightness(.55); }
+.pcard.bankrupt::after {
+  content: 'PHÁ SẢN';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: .08em;
+  color: #fecdd3;
+  padding: 0 .4em;
+  border: 3px solid #fecdd3;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.pcard.winner { box-shadow: inset 0 0 0 2.5px var(--gold), 0 0 30px rgba(251, 191, 36, .7); }
+.pc-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.pc-avatar {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  line-height: 1;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .85), var(--pc) 50%, color-mix(in srgb, var(--pc) 55%, #000));
+  box-shadow: 0 0 0 2.5px #fff;
+}
+.pc-net { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0d1233; display: none; }
+.is-online .pcard .pc-net { display: block; background: #22c55e; }
+.is-online .pcard.offline .pc-net { background: #ef4444; }
+.pc-id { min-width: 0; flex: 1; }
+.pc-name { font-weight: 800; font-size: 15px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-type { font-size: 11px; color: var(--muted); }
+.pc-turn { opacity: 0; color: var(--pc); font-size: 15px; transition: opacity .3s; }
+.pcard.active .pc-turn { opacity: 1; animation: blink 1s steps(2) infinite; }
+.pc-money { font-family: "Baloo 2", "Be Vietnam Pro", sans-serif; font-weight: 800; font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pc-money.up { animation: moneyUp .6s ease; }
+.pc-money.down { animation: moneyDown .6s ease; }
+.pc-sub { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.pc-status { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; }
+.money-fx {
+  position: absolute;
+  right: 12px;
+  top: 40px;
+  z-index: 5;
+  font-family: "Baloo 2", sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  pointer-events: none;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .6);
+  animation: floatUp 1.4s ease-out forwards;
+}
+.money-fx.gain { color: #6ee7b7; }
+.money-fx.loss { color: #fda4af; }
+.emote-bubble {
+  position: absolute;
+  right: -6px;
+  top: -18px;
+  z-index: 6;
+  font-size: 34px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 18px 18px 18px 4px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+  pointer-events: none;
+  animation: emotePop 2.6s ease forwards;
+}
+
+/* ---------- Lớp phủ giữa bàn cờ ---------- */
+#overlay-top {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  top: calc(50% + var(--cam-y) - var(--ov-up));
+  transform: translate(-50%, -100%);
+  max-width: var(--ov-w);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+}
+#overlay-bottom {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  top: calc(50% + var(--cam-y) + var(--ov-down));
+  transform: translateX(-50%);
+  width: var(--ov-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  text-align: center;
+  pointer-events: none;
+}
+#overlay-bottom .btn { pointer-events: auto; }
+.stage-status {
+  max-width: 100%;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: rgba(8, 10, 32, .62);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.stage-status:empty { display: none; }
+.stage-status .who { font-size: 1.15em; }
+.stage-status .sum { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.35em; color: var(--gold); }
+.select-title { font-weight: 700; }
+.dbl-tag {
+  display: inline-block;
+  font-size: .78em;
+  font-weight: 800;
+  padding: .05em .55em;
+  border-radius: 999px;
+  color: var(--ink-dark);
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  vertical-align: middle;
+  animation: pop .4s ease;
+}
+.stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.stage-actions .btn { font-size: 14px; box-shadow: 0 8px 22px rgba(0, 0, 0, .35); }
+.stage-actions .btn-big { font-size: 19px; }
+.stage-hint { font-size: 11px; color: var(--muted); text-shadow: 0 1px 3px #000; }
+.stage-hint:empty, .stage-timer:empty { display: none; }
+.stage-timer { font-size: 12.5px; font-weight: 700; padding: 3px 12px; border-radius: 999px; background: rgba(8, 10, 32, .65); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+.stage-timer.urgent { color: #fecaca; box-shadow: inset 0 0 0 1px #f87171; animation: blink .8s steps(2) infinite; }
+
+/* Băng rôn lượt chơi */
+.turn-banner {
+  position: absolute;
+  z-index: 25;
+  left: 50%;
+  top: calc(50% + var(--cam-y));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 30px 12px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 70%, #0b1026), #0d1233);
+  box-shadow: 0 0 0 3px var(--pc), 0 0 50px color-mix(in srgb, var(--pc) 60%, transparent), 0 20px 50px rgba(0, 0, 0, .55);
+  transform: translate(-50%, -50%);
+  animation: bannerIn .4s cubic-bezier(.2, 1.4, .4, 1);
+}
+.turn-banner.out { animation: bannerOut .35s ease forwards; }
+.tb-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 32px; background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .85), var(--pc) 55%); box-shadow: 0 0 0 3px #fff; }
+.tb-title { font-family: "Baloo 2", "Be Vietnam Pro", sans-serif; font-weight: 800; font-size: 25px; line-height: 1.05; }
+.tb-sub { font-size: 13px; font-weight: 600; opacity: .9; }
+
+/* ---------- Nhật ký ---------- */
+#log-panel {
+  position: absolute;
+  left: 14px;
+  top: 158px;
+  width: 262px;
+  height: clamp(110px, calc(var(--vh) * .5 - 210px), 290px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  pointer-events: auto;
+  background: rgba(6, 9, 30, .66);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+#log-panel.collapsed { height: auto; }
+#log-panel.collapsed .log-list { display: none; }
+.log-title { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 4px; font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; cursor: pointer; }
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 8px;
+  overflow-y: auto;
+  font-size: 11.5px;
+  line-height: 1.4;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .2) transparent;
+}
+#log-panel .log-list { flex: 1; min-height: 0; }
+.lg { display: flex; gap: .5em; padding: .2em .35em; border-radius: .4em; animation: logIn .35s ease; }
+.lg:nth-child(odd) { background: rgba(255, 255, 255, .03); }
+.lg-r { flex: none; color: rgba(255, 255, 255, .35); font-size: .85em; font-weight: 700; padding-top: .12em; }
+.lg-t { min-width: 0; overflow-wrap: anywhere; }
+.lg-round { justify-content: center; color: var(--muted); font-weight: 700; font-size: .85em; letter-spacing: .1em; text-transform: uppercase; background: none !important; }
+.lg-round span::before, .lg-round span::after { content: ' ── '; opacity: .4; }
+.lg-dice { color: #cbd5e1; }
+.lg-buy .lg-t { color: #bbf7d0; }
+.lg-pay .lg-t { color: #fecaca; }
+.lg-bad .lg-t { color: #fda4af; }
+.lg-good .lg-t { color: #a7f3d0; }
+.lg-chance .lg-t { color: #ddd6fe; }
+.lg-buyout { background: rgba(244, 63, 94, .14) !important; }
+.lg-win { background: rgba(251, 191, 36, .2) !important; font-weight: 700; }
+.log-modal { max-height: 60vh; font-size: 13px; }
+
+/* ---------- Thanh công cụ ---------- */
+#toolbar { position: fixed; z-index: 45; right: 14px; bottom: 150px; display: flex; flex-direction: column; gap: 7px; }
+.tb-btn {
+  position: relative;
+  width: 54px;
+  height: 50px;
+  border: 0;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(14, 18, 50, .72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), 0 8px 20px rgba(0, 0, 0, .3);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: transform .12s ease, background .2s ease;
+}
+.tb-btn:hover { background: rgba(40, 48, 110, .85); transform: translateY(-1px); }
+.tb-btn:active { transform: scale(.96); }
+.tb-ico { font-size: 19px; line-height: 1; }
+.tb-btn small { font-size: 9px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+#emote-picker {
+  position: fixed;
+  z-index: 46;
+  right: 78px;
+  bottom: 160px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(14, 18, 50, .92);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 16px 40px rgba(0, 0, 0, .5);
+  animation: popIn .2s ease;
+}
+.emote-btn { width: 44px; height: 44px; border: 0; border-radius: 12px; font-size: 24px; cursor: pointer; background: rgba(255, 255, 255, .07); transition: transform .12s; }
+.emote-btn:hover { transform: scale(1.15); background: rgba(255, 255, 255, .15); }
+
+#net-banner {
+  position: fixed;
+  z-index: 130;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 24px);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  background: rgba(127, 29, 29, .94);
+  box-shadow: 0 0 0 1px rgba(252, 165, 165, .6), 0 12px 30px rgba(0, 0, 0, .45);
+}
+
+/* ---------- Thông báo nổi ---------- */
+.toast-root {
+  position: fixed;
+  z-index: 120;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+}
+.toast {
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(17, 22, 58, .95);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 12px 30px rgba(0, 0, 0, .45);
+  animation: toastIn .3s cubic-bezier(.2, 1.3, .4, 1);
+}
+.toast.out { animation: toastOut .4s ease forwards; }
+.toast-good { box-shadow: 0 0 0 1px rgba(52, 211, 153, .6), 0 12px 30px rgba(0, 0, 0, .45); }
+.toast-bad { box-shadow: 0 0 0 1px rgba(251, 113, 133, .7), 0 12px 30px rgba(0, 0, 0, .45); background: rgba(76, 5, 25, .95); }
+.toast-warn { box-shadow: 0 0 0 1px rgba(249, 115, 22, .7), 0 12px 30px rgba(0, 0, 0, .45); }
+.toast-gold { box-shadow: 0 0 0 1px rgba(251, 191, 36, .8), 0 12px 30px rgba(0, 0, 0, .45); background: rgba(66, 40, 4, .95); }
+
+.confetti { position: fixed; inset: 0; z-index: 110; pointer-events: none; overflow: hidden; }
+.confetti i { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; animation-name: confettiFall; animation-timing-function: cubic-bezier(.3, .6, .5, 1); animation-fill-mode: forwards; }
+
+/* ---------- Màn ngang thấp ---------- */
+@media (max-height: 780px) {
+  body.wide .pcard { width: 226px; padding: 9px 11px 8px; gap: 3px; }
+  body.wide .pc-avatar { width: 38px; height: 38px; font-size: 22px; }
+  body.wide .pc-money { font-size: 21px; }
+  body.wide .pc-status { min-height: 0; }
+  body.wide #log-panel { top: 136px; width: 236px; }
+  body.wide #toolbar { bottom: 128px; gap: 5px; }
+  body.wide .tb-btn { width: 46px; height: 42px; border-radius: 13px; }
+  body.wide .tb-btn small { display: none; }
+  body.wide #emote-picker { right: 68px; bottom: 136px; }
+}
+
+/* ---------- Bố cục màn hẹp: bàn cờ ở trên, thẻ người chơi bên dưới ---------- */
+#dock { display: none; }
+body.docked #dock {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 6px 8px 86px;
+}
+#dock .pcard { position: relative; inset: auto; width: auto; padding: 8px 10px; gap: 3px; border-radius: 14px; }
+#dock .pc-avatar { width: 32px; height: 32px; font-size: 18px; box-shadow: 0 0 0 2px #fff; }
+#dock .pc-name { font-size: 13px; }
+#dock .pc-type { font-size: 10px; }
+#dock .pc-money { font-size: 19px; }
+#dock .pc-sub { font-size: 10px; }
+#dock .pc-status { min-height: 0; gap: 3px; }
+#dock .chip { font-size: 10px; padding: 1px 6px; }
+#dock .pcard.bankrupt::after { font-size: 16px; border-width: 2px; }
+#dock .money-fx { font-size: 14px; top: 28px; right: 10px; }
+#dock .emote-bubble { font-size: 24px; top: -10px; right: 2px; }
+#dock #log-panel { position: relative; left: auto; top: auto; width: auto; height: 170px; grid-column: 1 / -1; border-radius: 14px; }
+#dock #log-panel.collapsed { height: auto; }
+body.docked #toolbar { right: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(50%); flex-direction: row; gap: 6px; }
+body.docked .tb-btn { width: 46px; height: 46px; border-radius: 14px; }
+body.docked .tb-btn small { font-size: 8px; }
+body.docked #emote-picker { right: 50%; bottom: 66px; transform: translateX(50%); }
+body.docked .stage-status { font-size: 12.5px; padding: 4px 10px; }
+body.docked .stage-actions { gap: 6px; }
+body.docked .stage-actions .btn { font-size: 12.5px; padding: .55em 1em; }
+body.docked .stage-actions .btn-big { font-size: 15px; }
+body.docked .stage-hint { display: none; }
+body.docked .pill { font-size: 10.5px; padding: 3px 8px; }
+body.docked .turn-banner { padding: 8px 18px 8px 8px; gap: 10px; }
+body.docked .tb-avatar { width: 38px; height: 38px; font-size: 22px; }
+body.docked .tb-title { font-size: 17px; }
+body.docked .tb-sub { font-size: 11px; }
+@media (max-width: 400px) {
+  body.docked .tb-btn { width: 40px; height: 42px; }
+  body.docked .tb-btn small { display: none; }
+}
+
+@keyframes activeCard { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes moneyUp { 0% { color: #fff; } 30% { color: #6ee7b7; transform: scale(1.06); } 100% { color: #fff; transform: scale(1); } }
+@keyframes moneyDown { 0% { color: #fff; } 30% { color: #fda4af; transform: scale(.96); } 100% { color: #fff; transform: scale(1); } }
+@keyframes floatUp { 0% { opacity: 0; transform: translateY(8px) scale(.8); } 15% { opacity: 1; transform: translateY(0) scale(1.05); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+@keyframes emotePop { 0% { opacity: 0; transform: scale(.3) translateY(10px); } 12% { opacity: 1; transform: scale(1.15); } 20% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+@keyframes logIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+@keyframes bannerIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.6); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes bannerOut { to { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-12px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-10px); } }
+@keyframes confettiFall { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), 105vh) rotate(var(--rot)); opacity: .8; } }
+
+/* ---------- Điện thoại xoay ngang: bàn cờ bên trái, thẻ người chơi bên phải ---------- */
+body.docked.side { display: flex; align-items: stretch; overflow: hidden; }
+body.docked.side #scene { flex: none; width: var(--scene-w); height: var(--vh); }
+body.docked.side #dock { flex: 1; min-width: 0; height: var(--vh); max-width: none; margin: 0; padding: 8px 68px 8px 4px; overflow-y: auto; align-content: start; }
+body.docked.side #dock #log-panel { height: 150px; }
+body.docked.side #toolbar { left: auto; right: 8px; top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column; gap: 5px; }
+body.docked.side .tb-btn { width: 50px; height: 40px; }
+body.docked.side .tb-btn small { display: none; }
+body.docked.side #emote-picker { left: auto; right: 66px; top: 50%; bottom: auto; transform: translateY(-50%); }
+
+/* ---------- 3D trên màn dọc: thanh hành động nằm dưới bàn cờ ---------- */
+body.bar-below #overlay-bottom { top: auto; bottom: 4px; width: calc(100% - 16px); transform: translateX(-50%); }
