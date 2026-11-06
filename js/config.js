@@ -80,7 +80,7 @@ export const STUN_SERVERS = [
 ];
 /**
  * TURN (máy chủ chuyển tiếp): cần khi 2 máy ở 2 mạng khác nhau không nối thẳng được
- * (thường gặp với 4G, mạng công ty/trường học). PeerJS đã ngừng TURN miễn phí nên phải tự cấu hình:
+ * (thường gặp với 4G, mạng công ty/trường học). Không bắt buộc: thiếu TURN thì tự dùng kênh chuyển tiếp MQTT.
  * - Cách 1: tạo tài khoản miễn phí "Open Relay" tại metered.ca, dán đường link lấy thông tin TURN
  *   dạng 'https://<ten-app>.metered.live/api/v1/turn/credentials?apiKey=<API_KEY>' vào TURN_CREDENTIALS_URL.
  * - Cách 2: điền trực tiếp máy chủ TURN vào TURN_SERVERS,
@@ -88,6 +88,21 @@ export const STUN_SERVERS = [
  */
 export const TURN_CREDENTIALS_URL = '';
 export const TURN_SERVERS = [];
+/** Chờ kết nối ngang hàng tối đa bao lâu trước khi chuyển sang kênh chuyển tiếp MQTT */
+export const P2P_TIMEOUT_MS = 10000;
+export const RELAY_TIMEOUT_MS = 12000;
+/**
+ * Kênh chuyển tiếp dự phòng (không cần tài khoản): máy chủ MQTT công cộng qua WebSocket bảo mật.
+ * Nối song song tới tất cả, dùng máy chủ trả lời nhanh nhất. Có thể thay bằng ?mqtt=url1,url2.
+ */
+export const RELAY_BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://mqtt.eclipseprojects.io:443/mqtt',
+  'wss://test.mosquitto.org:8081/mqtt',
+];
+export const RELAY_TOPIC = 'cotyphu';
+export const MQTT_URLS = ['https://cdn.jsdelivr.net/npm/mqtt@5.14.1/dist/mqtt.min.js', 'https://unpkg.com/mqtt@5.14.1/dist/mqtt.min.js'];
 export const DECISION_TIMEOUT_MS = 45000; // thời gian suy nghĩ mỗi quyết định khi chơi trực tuyến
 export const SELL_TIMEOUT_MS = 75000;
 export const DISCONNECT_GRACE_MS = 20000; // chờ người mất kết nối trước khi máy chơi thay

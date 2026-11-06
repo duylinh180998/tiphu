@@ -3,11 +3,12 @@
  * trả lời các yêu cầu quyết định, tự kết nối lại khi rớt mạng.
  * Mọi dữ liệu nhận về đều được kiểm tra và lọc HTML trước khi hiển thị.
  */
-import { NET_PROTOCOL, HEARTBEAT_TIMEOUT_MS, EMOTES, TILE_COUNT, AVATARS, PLAYER_COLORS } from '../config.js';
+import { NET_PROTOCOL, HEARTBEAT_TIMEOUT_MS, EMOTES, TILE_COUNT, AVATARS, PLAYER_COLORS, RELAY_TIMEOUT_MS } from '../config.js';
 import { store, saveNetInfo, loadNetInfo } from '../core/store.js';
 import { sanitizeHTML } from '../core/util.js';
 import { emitBus } from '../core/bus.js';
 import { loadPeerJS, openPeer, connectTo, normalizeCode } from './peer.js';
+import { RelayLink, relayForced } from './relay.js';
 import { localAsk } from '../ui/ask.js';
 import { cancelPrompt } from '../ui/prompt.js';
 import { applyEvent, renderFromState } from '../ui/view.js';
@@ -34,8 +35,19 @@ const REJECT_TEXT = {
   version: 'Phiên bản trò chơi của bạn khác chủ phòng — hãy tải lại trang.',
 };
 
+/** Mở peer PeerJS cho khách; lỗi (thư viện/máy chủ bị chặn) thì trả null để đi kênh chuyển tiếp */
+async function openGuestPeer() {
+  if (relayForced()) return null;
+  try {
+    await loadPeerJS();
+    return await openPeer(null);
+  } catch (e) {
+    console.warn('[guest] Không mở được kết nối ngang hàng, sẽ dùng kênh chuyển tiếp', e);
+    return null;
+  }
+}
+
 export async function joinRoom(code, profile) {
-  await loadPeerJS();
   const c = normalizeCode(code);
   const info = loadNetInfo();
   client = {
@@ -43,6 +55,7 @@ export async function joinRoom(code, profile) {
     profile,
     token: info && info.code === c ? info.token : null,
     peer: null,
+    relay: false, // đã phải dùng kênh chuyển tiếp: các lần nối lại dùng luôn kênh này
     conn: null,
     myId: null,
     inGame: false,
@@ -53,7 +66,7 @@ export async function joinRoom(code, profile) {
     hb: null,
   };
   try {
-    client.peer = await openPeer(null);
+    client.peer = await openGuestPeer();
     await connect();
   } catch (e) {
     leaveRoom();
@@ -63,20 +76,63 @@ export async function joinRoom(code, profile) {
   return c;
 }
 
+/**
+ * Nối tới chủ phòng: thử kết nối ngang hàng trước; không được (khác mạng, NAT chặn, máy chủ PeerJS
+ * không dùng được) thì tự chuyển sang kênh chuyển tiếp MQTT.
+ */
 async function connect() {
   const me = client;
-  if (me.peer.disconnected && !me.peer.destroyed) me.peer.reconnect();
-  const conn = await connectTo(me.peer, me.code);
+  let conn = null;
+  let p2pError = null;
+  if (me.peer && !me.relay) {
+    try {
+      if (me.peer.disconnected && !me.peer.destroyed) me.peer.reconnect();
+      conn = await connectTo(me.peer, me.code);
+    } catch (e) {
+      p2pError = e;
+    }
+  }
   if (client !== me || me.leaving) {
-    conn.close();
+    if (conn) conn.close();
     return;
   }
+  if (!conn) {
+    conn = new RelayLink(me.code);
+    try {
+      await conn.start();
+    } catch (e) {
+      conn.close();
+      throw p2pError || e;
+    }
+    if (client !== me || me.leaving) {
+      conn.close();
+      return;
+    }
+  }
+  // Kênh chuyển tiếp không có bước "mở kết nối": coi là vào được khi chủ phòng trả lời lời chào
+  const replied = conn.relay
+    ? new Promise((resolve) => {
+        const off = conn.on('data', () => {
+          off();
+          resolve(true);
+        });
+        setTimeout(() => resolve(false), RELAY_TIMEOUT_MS);
+      })
+    : null;
   me.conn = conn;
   me.last = Date.now();
   conn.on('data', (msg) => onData(conn, msg));
   conn.on('close', () => onLost(conn));
   conn.on('error', () => onLost(conn));
   conn.send({ t: 'hello', v: NET_PROTOCOL, name: me.profile.name, avatar: me.profile.avatar, token: me.token });
+  if (!replied) return;
+  if (!(await replied)) {
+    if (me.conn === conn) me.conn = null;
+    conn.close();
+    const known = p2pError && p2pError.type !== 'timeout';
+    throw new Error(known ? p2pError.message : 'Không vào được phòng — kiểm tra lại mã phòng và kết nối Internet.');
+  }
+  me.relay = true;
 }
 
 export function leaveRoom() {
@@ -91,6 +147,7 @@ export function leaveRoom() {
     /* đã đóng */
   }
   setTimeout(() => {
+    if (c.conn && c.conn.relay) c.conn.close();
     try {
       if (c.peer) c.peer.destroy();
     } catch (e) {
@@ -264,7 +321,7 @@ async function reconnectLoop() {
     await wait(3000);
     if (client !== me || me.leaving) return;
     try {
-      if (me.peer.destroyed) me.peer = await openPeer(null);
+      if (!me.relay && (!me.peer || me.peer.destroyed)) me.peer = await openGuestPeer();
       await connect();
       me.reconnecting = false;
       emitBus('net:status', { lost: false });

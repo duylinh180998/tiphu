@@ -6,13 +6,14 @@
  */
 import {
   NET_PROTOCOL, PLAYER_COLORS, AVATARS, BOT_NAMES, DISCONNECT_GRACE_MS, HEARTBEAT_MS, HEARTBEAT_TIMEOUT_MS, EMOTES,
-  DEFAULT_ROUNDS,
+  DEFAULT_ROUNDS, RELAY_TIMEOUT_MS,
 } from '../config.js';
 import { store } from '../core/store.js';
 import { sleep, humanWait, resetSession } from '../core/session.js';
 import { randomToken, esc } from '../core/util.js';
 import { emitBus } from '../core/bus.js';
-import { loadPeerJS, openHostPeer } from './peer.js';
+import { loadPeerJS, openHostPeer, newRoomCode } from './peer.js';
+import { RelayHub, relayForced } from './relay.js';
 import { setRemoteAsker, timeoutFor, validate, onTimeout, botDecide } from '../game/players.js';
 import { log, startNewGame } from '../game/engine.js';
 import { pn } from '../game/text.js';
@@ -24,9 +25,10 @@ let room = null;
 export const isHosting = () => !!room;
 export const hostRoomCode = () => (room ? room.code : null);
 
-function newRoom(peer, code) {
+function newRoom({ peer, code, hub }) {
   return {
     peer,
+    hub,
     code,
     started: false,
     seats: [],
@@ -118,10 +120,35 @@ function emitLobby() {
   });
 }
 
+/**
+ * Mở 2 đường cho khách vào phòng: kết nối ngang hàng PeerJS (nhanh, trực tiếp) và kênh chuyển tiếp
+ * MQTT (dự phòng khi hai mạng không nối thẳng được). Máy chủ PeerJS không dùng được thì phòng
+ * vẫn mở được chỉ với kênh chuyển tiếp.
+ */
+async function openTransports(preferredCode) {
+  let peer = null;
+  let code = preferredCode;
+  if (!relayForced()) {
+    try {
+      await loadPeerJS();
+      ({ peer, code } = await openHostPeer(preferredCode));
+    } catch (e) {
+      console.warn('[host] Không mở được kết nối ngang hàng, chỉ dùng kênh chuyển tiếp', e);
+    }
+  }
+  if (!code) code = newRoomCode();
+  const hub = new RelayHub(code);
+  hub.start();
+  if (!peer && !(await hub.whenReady(RELAY_TIMEOUT_MS))) {
+    hub.stop();
+    throw new Error('Không kết nối được máy chủ trò chơi trực tuyến. Hãy kiểm tra Internet rồi thử lại.');
+  }
+  return { peer, code, hub };
+}
+
 export async function createRoom(profile, options) {
-  await loadPeerJS();
-  const { peer, code } = await openHostPeer(null);
-  room = newRoom(peer, code);
+  room = newRoom(await openTransports(null));
+  const code = room.code;
   room.options = { ...room.options, ...options };
   room.seats = [{ kind: 'host', name: cleanName(profile.name), avatar: profile.avatar }, { kind: 'open' }, { kind: 'open' }, { kind: 'open' }];
   attachPeer();
@@ -212,9 +239,8 @@ export function startOnlineGame() {
 /** Chủ phòng tải lại trang: mở lại phòng với mã cũ để khách tự kết nối lại */
 export async function reopenRoom() {
   const st = store.state;
-  await loadPeerJS();
-  const { peer, code } = await openHostPeer(st.online.code);
-  room = newRoom(peer, code);
+  room = newRoom(await openTransports(st.online.code));
+  const code = room.code;
   room.started = true;
   st.online.code = code;
   st.players.forEach((p) => {
@@ -240,8 +266,9 @@ export function closeRoom() {
   setRemoteAsker(null);
   r.pending.forEach((pend) => pend.finish({ disconnected: true }));
   setTimeout(() => {
+    r.hub.stop();
     try {
-      r.peer.destroy();
+      if (r.peer) r.peer.destroy();
     } catch (e) {
       /* đã đóng */
     }
@@ -252,13 +279,18 @@ export function closeRoom() {
 // Kết nối
 // ===================================================================
 function attachPeer() {
-  const peer = room.peer;
-  peer.on('connection', (conn) => {
+  const { peer, hub } = room;
+  const accept = (conn) => {
+    if (!room) return;
     room.conns.set(conn, { pid: null, seat: null, last: Date.now() });
     conn.on('data', (msg) => onData(conn, msg));
     conn.on('close', () => onClose(conn));
     conn.on('error', () => onClose(conn));
-  });
+  };
+  hub.on('connection', accept);
+  room.hb = setInterval(heartbeat, HEARTBEAT_MS);
+  if (!peer) return;
+  peer.on('connection', accept);
   peer.on('disconnected', () => {
     if (!room || room.peer !== peer) return;
     try {
@@ -268,7 +300,6 @@ function attachPeer() {
     }
   });
   peer.on('error', (err) => console.warn('[host]', err && err.type, err));
-  room.hb = setInterval(heartbeat, HEARTBEAT_MS);
 }
 
 function heartbeat() {
