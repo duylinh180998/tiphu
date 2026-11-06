@@ -94,10 +94,20 @@
     <button id="tb-view" class="tb-btn" type="button" title="Đổi góc nhìn 3D / 2D"><span class="tb-ico">🧊</span><small class="tb-label">3D</small></button>
     <button id="tb-log" class="tb-btn tb-game" type="button" title="Nhật ký ván đấu"><span class="tb-ico">📜</span><small>Nhật ký</small></button>
     <button id="tb-emote" class="tb-btn tb-game hidden" type="button" title="Gửi biểu cảm"><span class="tb-ico">😀</span><small>Biểu cảm</small></button>
+    <button id="tb-chat" class="tb-btn tb-game hidden" type="button" title="Trò chuyện"><span class="tb-ico">💬</span><small>Chat</small><span class="tb-badge hidden"></span></button>
     <button id="tb-rules" class="tb-btn" type="button" title="Luật chơi"><span class="tb-ico">📖</span><small>Luật</small></button>
     <button id="tb-menu" class="tb-btn tb-game" type="button" title="Menu"><span class="tb-ico">🏠</span><small>Menu</small></button>
   </nav>
   <div id="emote-picker" class="hidden" role="menu" aria-label="Biểu cảm"></div>
+  <section id="chat-panel" class="hidden" aria-label="Trò chuyện">
+    <div class="chat-head"><span>💬 Trò chuyện</span><button type="button" class="chat-close" aria-label="Đóng khung trò chuyện">✕</button></div>
+    <ol id="chat-list" class="chat-list" aria-live="polite"></ol>
+    <div id="chat-quick" class="chat-quick"></div>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" type="text" maxlength="120" placeholder="Nhập tin nhắn…" aria-label="Tin nhắn" enterkeyhint="send" />
+      <button class="btn btn-primary btn-sm" type="submit">Gửi</button>
+    </form>
+  </section>
   <div id="net-banner" class="hidden" role="status"></div>
 
   <div id="tooltip" class="tooltip" role="tooltip"></div>

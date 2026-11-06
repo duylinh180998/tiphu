@@ -6,8 +6,9 @@
  */
 import {
   NET_PROTOCOL, PLAYER_COLORS, AVATARS, BOT_NAMES, DISCONNECT_GRACE_MS, HEARTBEAT_MS, HEARTBEAT_TIMEOUT_MS, EMOTES,
-  DEFAULT_ROUNDS, RELAY_TIMEOUT_MS,
+  DEFAULT_ROUNDS, RELAY_TIMEOUT_MS, CHAT_INTERVAL_MS,
 } from '../config.js';
+import { cleanChatText } from '../ui/chat.js';
 import { store } from '../core/store.js';
 import { sleep, humanWait, resetSession } from '../core/session.js';
 import { randomToken, esc } from '../core/util.js';
@@ -41,6 +42,7 @@ function newRoom({ peer, code, hub }) {
     sinkOff: null,
     hb: null,
     emoteAt: {},
+    chatAt: {},
   };
 }
 
@@ -343,6 +345,9 @@ function onData(conn, msg) {
     case 'emote':
       onEmote(entry, msg);
       break;
+    case 'chat':
+      onChat(entry, msg);
+      break;
     case 'leave':
       try {
         conn.close();
@@ -499,6 +504,23 @@ function onEmote(entry, msg) {
   if (now - (room.emoteAt[entry.pid] || 0) < 1200) return;
   room.emoteAt[entry.pid] = now;
   view.emote(entry.pid, msg.e);
+}
+
+/** Tin nhắn trò chuyện của khách: kiểm tra độ dài, chống gửi dồn dập rồi phát cho mọi người */
+function onChat(entry, msg) {
+  if (!room.started || entry.pid == null) return;
+  const text = cleanChatText(msg.text);
+  if (!text) return;
+  const now = Date.now();
+  if (now - (room.chatAt[entry.pid] || 0) < CHAT_INTERVAL_MS) return;
+  room.chatAt[entry.pid] = now;
+  view.chat(entry.pid, text);
+}
+
+/** Chủ phòng gửi tin nhắn của chính mình */
+export function hostChat(text) {
+  const clean = cleanChatText(text);
+  if (room && room.started && clean) view.chat(store.myId, clean);
 }
 
 /** Chủ phòng gửi biểu cảm của chính mình */

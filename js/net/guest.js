@@ -161,6 +161,10 @@ export function leaveRoom() {
   }
 }
 
+export function sendChat(text) {
+  if (client && client.inGame && typeof text === 'string' && text) send({ t: 'chat', text: text.slice(0, 200) });
+}
+
 export function sendEmote(emoji) {
   if (client && client.inGame && EMOTES.includes(emoji)) send({ t: 'emote', e: emoji });
 }

@@ -304,6 +304,75 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
 .emote-btn { width: 44px; height: 44px; border: 0; border-radius: 12px; font-size: 24px; cursor: pointer; background: rgba(255, 255, 255, .07); transition: transform .12s; }
 .emote-btn:hover { transform: scale(1.15); background: rgba(255, 255, 255, .15); }
 
+/* ---------- Trò chuyện ---------- */
+.tb-btn { position: relative; }
+.tb-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px #fff;
+  animation: popIn .25s ease;
+}
+#chat-panel {
+  position: fixed;
+  z-index: 47;
+  right: 78px;
+  bottom: 20px;
+  width: min(320px, calc(100vw - 100px));
+  height: min(420px, calc(var(--vh) - 40px));
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(16, 22, 60, .96);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 18px 44px rgba(0, 0, 0, .5);
+  animation: popIn .2s ease;
+}
+.chat-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 8px 14px; font-weight: 800; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.chat-close { width: 28px; height: 28px; border: 0; border-radius: 9px; cursor: pointer; color: #cbd5e1; background: rgba(255, 255, 255, .08); }
+.chat-close:hover { background: rgba(255, 255, 255, .16); }
+.chat-list { flex: 1 1 auto; min-height: 0; margin: 0; padding: 10px 12px; list-style: none; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 7px; }
+.chat-list:empty::before { content: 'Chưa có tin nhắn nào — chào mọi người đi! 👋'; margin: auto; font-size: 12.5px; color: var(--muted); text-align: center; }
+.chat-msg { align-self: flex-start; max-width: 88%; padding: 6px 10px 7px; border-radius: 4px 14px 14px 14px; background: rgba(255, 255, 255, .08); box-shadow: inset 3px 0 0 var(--pc); word-break: break-word; }
+.chat-msg.mine { align-self: flex-end; border-radius: 14px 4px 14px 14px; background: color-mix(in srgb, var(--pc) 32%, rgba(16, 22, 60, .9)); box-shadow: none; }
+.chat-who { display: block; font-size: 11px; font-weight: 800; color: color-mix(in srgb, var(--pc) 70%, #fff); }
+.chat-text { font-size: 13.5px; line-height: 1.35; color: #eef2ff; }
+.chat-quick { flex: none; display: flex; gap: 5px; overflow-x: auto; padding: 6px 10px 2px; scrollbar-width: none; }
+.chat-chip { flex: none; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; color: #e0e7ff; background: rgba(255, 255, 255, .09); }
+.chat-chip:hover { background: rgba(255, 255, 255, .18); }
+.chat-form { flex: none; display: flex; gap: 6px; padding: 8px 10px 10px; }
+.chat-form input { flex: 1; min-width: 0; padding: 9px 12px; border: 0; border-radius: 12px; font: inherit; font-size: 14px; color: #fff; background: rgba(0, 0, 0, .32); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); outline: none; }
+.chat-form input:focus { box-shadow: inset 0 0 0 2px #fb923c; }
+/* Bong bóng lời nói trên thẻ người chơi */
+.chat-bubble {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(100% + 6px);
+  z-index: 7;
+  padding: 7px 11px;
+  border-radius: 14px 14px 14px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #0f172a;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--pc), 0 8px 18px rgba(0, 0, 0, .3);
+  word-break: break-word;
+  animation: popIn .25s ease;
+}
+body:not(.docked) .pcard.slot-1 .chat-bubble, body:not(.docked) .pcard.slot-2 .chat-bubble { bottom: auto; top: calc(100% + 6px); border-radius: 4px 14px 14px 14px; }
+
 #net-banner {
   position: fixed;
   z-index: 130;
@@ -394,6 +463,7 @@ body.docked #toolbar { right: 50%; bottom: max(10px, env(safe-area-inset-bottom)
 body.docked .tb-btn { width: 46px; height: 46px; border-radius: 14px; }
 body.docked .tb-btn small { font-size: 8px; }
 body.docked #emote-picker { right: 50%; bottom: 66px; transform: translateX(50%); }
+body.docked #chat-panel { left: 8px; right: 8px; width: auto; bottom: 66px; height: min(380px, calc(var(--vh) - 90px)); }
 body.docked .stage-status { font-size: 12.5px; padding: 4px 10px; }
 body.docked .stage-actions { gap: 6px; }
 body.docked .stage-actions .btn { font-size: 12.5px; padding: .55em 1em; }
@@ -431,6 +501,7 @@ body.docked.side #toolbar { left: auto; right: 8px; top: 50%; bottom: auto; tran
 body.docked.side .tb-btn { width: 50px; height: 40px; }
 body.docked.side .tb-btn small { display: none; }
 body.docked.side #emote-picker { left: auto; right: 66px; top: 50%; bottom: auto; transform: translateY(-50%); }
+body.docked.side #chat-panel { left: auto; right: 66px; top: 8px; bottom: 8px; width: min(300px, calc(100vw - 80px)); height: auto; }
 
 /* ---------- 3D trên màn dọc: thanh hành động nằm dưới bàn cờ ---------- */
 body.bar-below #overlay-bottom { top: auto; bottom: 4px; width: calc(100% - 16px); transform: translateX(-50%); }

@@ -16,6 +16,7 @@ import { renderPlayers, renderPills, setStatus, clearActions, renderLog, setTime
 import { banner, toast, tileFx } from './fx.js';
 import { Sound } from './audio.js';
 import { chanceDialog, gameOverDialog, bankruptNotice } from './dialogs.js';
+import { addChatMessage, cleanChatText } from './chat.js';
 
 const sinks = new Set();
 export function addViewSink(fn) {
@@ -145,6 +146,10 @@ export const view = {
     playerEmote(pid, emoji);
     Sound.play('emote');
   },
+  chat(pid, text) {
+    emit({ t: 'chat', pid, text });
+    addChatMessage(pid, text);
+  },
 };
 
 /** Máy khách: hiển thị một sự kiện nhận từ chủ phòng (không chờ hoạt ảnh) */
@@ -217,6 +222,11 @@ export function applyEvent(ev) {
     case 'bankrupt':
       if (validPid(ev.pid) && bankruptIsMine(ev.pid)) bankruptNotice(false);
       break;
+    case 'chat': {
+      const text = cleanChatText(ev.text);
+      if (validPid(ev.pid) && text) addChatMessage(ev.pid, text);
+      break;
+    }
     case 'emote':
       if (validPid(ev.pid)) {
         playerEmote(ev.pid, String(ev.emoji).slice(0, 4));

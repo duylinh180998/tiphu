@@ -62,6 +62,11 @@ export const DEFAULT_SLOTS = [
 ];
 export const BOT_NAMES = ['Minh', 'Lan', 'Hùng', 'Mai', 'Tuấn', 'Vy'];
 export const EMOTES = ['👍', '😂', '😱', '😡', '🎉', '🙏'];
+// ---------- Trò chuyện (chơi trực tuyến) ----------
+export const CHAT_MAX_LEN = 120; // số ký tự tối đa mỗi tin nhắn
+export const CHAT_INTERVAL_MS = 700; // chống gửi dồn dập: mỗi người tối đa 1 tin / 0,7 giây
+export const CHAT_HISTORY = 80; // số tin nhắn giữ lại trong khung chat
+export const QUICK_CHATS = ['Chào cả nhà! 👋', 'Nhanh lên nào ⏩', 'Hay quá! 👏', 'Đen quá 😭', 'Chơi tiếp không? 🎲', 'GG 🤝'];
 
 // ---------- Tốc độ hoạt ảnh ----------
 export const SPEEDS = {
