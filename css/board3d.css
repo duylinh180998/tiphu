@@ -184,7 +184,7 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .label .sub { font-size: calc(11px * var(--fz)); font-weight: 700; opacity: .9; }
 .t-chance { background: linear-gradient(160deg, #8b5cf6, #4c1d95); color: #fff; }
 .t-tax { background: linear-gradient(160deg, #f43f5e, #7f1d1d); color: #fff; }
-.t-chance .name, .t-tax .name { font-family: "Baloo 2", "Be Vietnam Pro", sans-serif; letter-spacing: .03em; }
+.t-chance .name, .t-tax .name { font-family: var(--font-display); letter-spacing: .03em; }
 
 /* Chế độ 2D: mặt chữ nằm ngang, dải màu hướng vào trong bàn cờ */
 .view-2d .tile-face { width: 100%; height: 100%; }
@@ -217,7 +217,7 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .view-3d .corner-label .icon { display: none; }
 .corner-label .icon { font-size: calc(48px * var(--fz)); line-height: 1; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .4)); }
 .corner-label .name {
-  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: calc(19px * var(--fz));
   line-height: 1.02;
@@ -354,7 +354,7 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
   position: absolute;
   left: 50%;
   top: 50%;
-  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 92px;
   line-height: 1;
@@ -487,7 +487,7 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 /* ---------- Hiệu ứng nổi trên ô ---------- */
 .fx-anchor { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none; }
 .fx-pop {
-  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 36px;
   color: #fff;

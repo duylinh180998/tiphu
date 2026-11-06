@@ -11,6 +11,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" />
+  <script>
+    // Windows: tải bộ emoji màu Noto để biểu tượng (máy bay, cờ, thú…) tròn trịa, đồng nhất với điện thoại
+    if (/Windows/i.test(navigator.userAgent)) {
+      document.documentElement.classList.add('emoji-noto');
+      var emojiFont = document.createElement('link');
+      emojiFont.rel = 'stylesheet';
+      emojiFont.href = 'https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap';
+      document.head.appendChild(emojiFont);
+    }
+  </script>
 
   <!-- TailwindCSS qua CDN (Play CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -36,7 +46,7 @@
   <link rel="stylesheet" href="css/dialogs.css" />
   <link rel="stylesheet" href="css/screens.css" />
 </head>
-<body class="font-sans text-slate-100 antialiased">
+<body class="text-slate-100 antialiased">
 
   <!-- ========== KHUNG CẢNH: CAMERA + BÀN CỜ 9x9 ========== -->
   <div id="scene">

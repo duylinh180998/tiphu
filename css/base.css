@@ -23,6 +23,13 @@
   --fly-ms: 780ms;
   --dice-ms: 900ms;
   --tilt: 57deg;
+  --font-text: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Baloo 2", "Be Vietnam Pro", sans-serif;
+}
+/* Windows vẽ emoji kiểu phẳng (Segoe UI Emoji) nên dùng bộ emoji màu Noto cho giống điện thoại/Mac */
+.emoji-noto {
+  --font-text: "Be Vietnam Pro", "Noto Color Emoji", system-ui, "Segoe UI", sans-serif;
+  --font-display: "Baloo 2", "Be Vietnam Pro", "Noto Color Emoji", sans-serif;
 }
 @supports (height: 100dvh) {
   :root { --vh: 100dvh; }
@@ -31,7 +38,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
-  font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-text);
   color: var(--ink);
   /* Nền trời sáng: xanh da trời nhạt, mây trắng mờ, chân trời hồng phấn */
   background:
@@ -86,7 +93,7 @@ button { font-family: inherit; }
 .btn-ghost { background: rgba(255, 255, 255, .08); }
 .btn-sm { font-size: 12px; padding: .45em .9em; }
 .btn-big {
-  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: .04em;
   padding: .55em 1.7em .45em;
