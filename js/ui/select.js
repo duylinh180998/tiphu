@@ -6,7 +6,7 @@ import { store } from '../core/store.js';
 import { esc, fmtFull } from '../core/util.js';
 import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS } from '../config.js';
 import { TILES, GROUPS, GROUP_TILES, SPECIAL_DESC } from '../data/board.js';
-import { rentOf, buyoutCost, sellValue, resortCount, inflationPct } from '../game/rules.js';
+import { rentOf, buyoutCost, sellValue, resortCount, inflationPct, hasMonopoly, isOutage } from '../game/rules.js';
 import { dom } from './dom.js';
 import { setSelectable, tileEl } from './board3d.js';
 import { beginPrompt } from './prompt.js';
@@ -102,29 +102,31 @@ export function tileInfoHTML(i) {
   if (t.type === 'city') {
     const g = GROUPS[t.group];
     const rows = [1, 2, 3, 4]
-      .map((L) => `<tr class="${owner && pr.level === L ? 'cur' : ''}${L === 4 ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${L === 4 ? 'Biểu Tượng' : `Cấp ${L}`}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td>${fmtFull(t.eco.rents[L])}</td></tr>`)
+      .map((L) => `<tr class="${owner && pr.level === L ? 'cur' : ''}${L === 4 ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td>${fmtFull(t.eco.rents[L])}</td></tr>`)
       .join('');
     let status;
     if (owner) {
-      const fest = s.festival.tile === i ? ` <span class="tt-fest">🎉x${s.festival.mult}</span>` : '';
+      const fest = (hasMonopoly(i) ? ' <span class="tt-fest">🎨x2</span>' : '') + (s.festival.tile === i ? ` <span class="tt-fest">🎉x${s.festival.mult}</span>` : '');
       status = `<div class="tt-owner" style="--pc:${owner.color}">${esc(owner.avatar)} ${esc(owner.name)} · ${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}</div>
         <div class="tt-line">💰 Tiền thuê hiện tại: <b>${fmtFull(rentOf(i))}</b>${fest}${inflTag()}</div>
-        <div class="tt-line">${pr.level >= 4 ? '🔒 Biểu Tượng — không thể bị mua lại' : `💥 Giá mua lại: <b>${fmtFull(buyoutCost(i))}</b>`}</div>
+        ${isOutage(i) ? `<div class="tt-line">🔌 Mất điện — không thu tiền thuê (còn ${pr.outage} vòng)</div>` : ''}
+        <div class="tt-line">${pr.level >= 4 ? '🔒 Biểu Tượng — không thể bị mua đứt' : `💥 Giá mua đứt: <b>${fmtFull(buyoutCost(i))}</b>`}</div>
         <div class="tt-line">💱 Bán cho ngân hàng: ${fmtFull(sellValue(i))}</div>`;
     } else {
       status = `<div class="tt-line">🏷️ Chưa có chủ — giá từ <b>${fmtFull(t.eco.value[1])}</b></div>`;
     }
     return `<div class="tt-head" style="--g:${g.color}"><div class="tt-group">${esc(g.name)} <span class="gdots">${groupDots(t.group)}</span></div><div class="tt-name">${esc(t.name)}</div></div>
       ${status}
-      <table class="tt-table"><thead><tr><th>Công trình</th><th>Chi phí</th><th>Thuê</th></tr></thead><tbody>${rows}</tbody></table>`;
+      <table class="tt-table"><thead><tr><th>Công trình</th><th>Chi phí</th><th>Thuê</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="tt-desc">🎨 Sở hữu trọn nhóm màu: tiền thuê cả nhóm x2.</div>`;
   }
   if (t.type === 'resort') {
     const cnt = owner ? resortCount(owner.id) : 0;
-    const rows = [1, 2, 3, 4].map((n) => `<tr class="${owner && cnt === n ? 'cur' : ''}"><td>🏖️ Sở hữu ${n} khu</td><td>${fmtFull(RESORT_RENTS[n])}</td></tr>`).join('');
+    const rows = [1, 2, 3, 4].map((n) => `<tr class="${owner && cnt === n ? 'cur' : ''}"><td>🏖️ Sở hữu ${n} khu</td><td>${n === 4 ? "🏆 Thắng ngay" : fmtFull(RESORT_RENTS[n])}</td></tr>`).join('');
     const status = owner
-      ? `<div class="tt-owner" style="--pc:${owner.color}">${esc(owner.avatar)} ${esc(owner.name)} · ${cnt}/4 khu</div><div class="tt-line">💰 Tiền thuê hiện tại: <b>${fmtFull(rentOf(i))}</b>${inflTag()}</div><div class="tt-line">🔒 Khu nghỉ dưỡng không thể bị mua lại</div><div class="tt-line">💱 Bán cho ngân hàng: ${fmtFull(sellValue(i))}</div>`
+      ? `<div class="tt-owner" style="--pc:${owner.color}">${esc(owner.avatar)} ${esc(owner.name)} · ${cnt}/4 khu</div><div class="tt-line">💰 Tiền thuê hiện tại: <b>${fmtFull(rentOf(i))}</b>${inflTag()}</div><div class="tt-line">🔒 Khu nghỉ dưỡng không thể bị mua đứt</div><div class="tt-line">💱 Bán cho ngân hàng: ${fmtFull(sellValue(i))}</div>`
       : `<div class="tt-line">🏷️ Chưa có chủ — giá <b>${fmtFull(RESORT_PRICE)}</b></div>`;
-    return `<div class="tt-head tt-resort"><div class="tt-group">Khu Nghỉ Dưỡng · không xây nhà</div><div class="tt-name">🏖️ ${esc(t.name)}</div></div>${status}<table class="tt-table"><thead><tr><th>Số khu</th><th>Thuê</th></tr></thead><tbody>${rows}</tbody></table><div class="tt-desc">Không xây nhà, không thể bị mua lại. Sở hữu cả 4 khu = <b>Độc Quyền Du Lịch</b> (chiến thắng).</div>`;
+    return `<div class="tt-head tt-resort"><div class="tt-group">Khu Nghỉ Dưỡng · không xây nhà</div><div class="tt-name">🏖️ ${esc(t.name)}</div></div>${status}<table class="tt-table"><thead><tr><th>Số khu</th><th>Thuê</th></tr></thead><tbody>${rows}</tbody></table><div class="tt-desc">Không xây nhà, không thể bị mua đứt. Sở hữu cả 4 khu = <b>Độc Quyền Du Lịch</b> (chiến thắng).</div>`;
   }
   let extra = '';
   if (t.type === 'festival' && s && s.festival.tile != null) {

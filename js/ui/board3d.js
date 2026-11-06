@@ -8,7 +8,7 @@ import { TILES, GROUPS, gridPos, isCorner, sideOf } from '../data/board.js';
 import { LEVEL_ICONS, RESORT_PRICE } from '../config.js';
 import { store } from '../core/store.js';
 import { esc, fmt } from '../core/util.js';
-import { rentOf } from '../game/rules.js';
+import { rentOf, hasMonopoly, isOutage } from '../game/rules.js';
 import { dom, el } from './dom.js';
 import { cityModel, resortModel, billboard } from './models.js';
 
@@ -26,9 +26,9 @@ function faceHTML(t) {
   const nameCls = t.name.length >= 9 ? 'name long' : 'name';
   switch (t.type) {
     case 'city':
-      return `<div class="tile-face"><div class="band"><span class="lvl"></span></div><div class="label"><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div></div></div><div class="lot"></div><div class="fest-flag"></div>`;
+      return `<div class="tile-face"><div class="band"><span class="lvl"></span><span class="mono-tag" title="Độc quyền nhóm màu: thuê x2">x2</span></div><div class="label"><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div></div></div><div class="lot"></div><div class="fest-flag"></div><div class="out-flag"></div>`;
     case 'resort':
-      return `<div class="tile-face"><div class="band band-resort"><span class="lvl">🏖️</span></div><div class="label"><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div></div></div><div class="lot"></div>`;
+      return `<div class="tile-face"><div class="band band-resort"><span class="lvl">🏖️</span></div><div class="label"><div class="beach-ico">🌴⛱️</div><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div></div></div><div class="lot"></div>`;
     case 'chance':
       return `<div class="tile-face"><div class="label special"><div class="icon">${t.icon}</div><div class="name">${t.name}</div></div></div>`;
     case 'tax':
@@ -91,12 +91,23 @@ export function renderTiles() {
       price.textContent = fmt(t.type === 'resort' ? RESORT_PRICE : t.eco.value[1]);
       price.classList.remove('rent');
     }
-    const key = owner ? `${pr.level}:${owner.color}` : '';
+    const key = `${owner ? `${pr.level}:${owner.color}` : ''}`;
     if (modelKeys[i] !== key) {
       modelKeys[i] = key;
-      e.querySelector('.lot').innerHTML = owner ? (t.type === 'city' ? cityModel(pr.level, owner.color) : resortModel(owner.color)) : '';
+      const lot = e.querySelector('.lot');
+      if (t.type === 'resort') lot.innerHTML = resortModel(owner ? owner.color : null);
+      else lot.innerHTML = owner ? cityModel(pr.level, owner.color) : '';
     }
     if (t.type === 'city') {
+      e.classList.toggle('mono', !!s && hasMonopoly(i));
+      const out = !!s && isOutage(i);
+      e.classList.toggle('outage', out);
+      const oflag = e.querySelector('.out-flag');
+      const olabel = out ? `🔌 ${pr.outage}` : '';
+      if (oflag.dataset.v !== olabel) {
+        oflag.dataset.v = olabel;
+        oflag.innerHTML = out ? billboard(0, 0, olabel, 'bb-out') : '';
+      }
       const fest = !!s && s.festival.tile === i;
       e.classList.toggle('festival', fest);
       const flag = e.querySelector('.fest-flag');

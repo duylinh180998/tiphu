@@ -1,7 +1,9 @@
 /**
  * Truy vấn luật chơi thuần túy trên trạng thái ván: giá trị, tiền thuê, độc quyền…
  */
-import { RESORT_PRICE, RESORT_RENTS, SELL_RATE, BUYOUT_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP } from '../config.js';
+import {
+  RESORT_PRICE, RESORT_RENTS, SELL_RATE, BUYOUT_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP, MONOPOLY_MULT, COUPON_RATE,
+} from '../config.js';
 import { TILES, PROP_TILES, CITY_TILES, RESORT_TILES, GROUP_TILES, GROUPS, SIDE_TILES, SIDE_NAMES } from '../data/board.js';
 import { r5 } from '../core/util.js';
 import { store } from '../core/store.js';
@@ -45,11 +47,27 @@ export function inflation() {
 }
 export const inflationPct = () => Math.round((inflation() - 1) * 100);
 
+/** Thành phố i đang bị Mất Điện (không thu tiền thuê) */
+export const isOutage = (i) => !!st().props[i] && st().props[i].outage > 0;
+
+/** Chủ của thành phố i sở hữu trọn nhóm màu của nó */
+export function hasMonopoly(i) {
+  const t = TILES[i];
+  const pr = st().props[i];
+  return t.type === 'city' && !!pr && pr.owner != null && groupComplete(t.group, pr.owner);
+}
+
+/** Tiền thuê = thuê theo cấp x độc quyền màu (x2) x Lễ Hội x lạm phát; Mất Điện thì bằng 0 */
 export function rentOf(i) {
+  if (isOutage(i)) return 0;
   let r = baseRent(i);
+  if (hasMonopoly(i)) r *= MONOPOLY_MULT;
   if (TILES[i].type === 'city' && st().festival.tile === i) r *= st().festival.mult;
   return r5(r * inflation());
 }
+
+/** Giá phải trả khi người chơi đang giữ thẻ Giảm Giá */
+export const discounted = (p, cost) => (p.coupon > 0 ? r5(cost * COUPON_RATE) : cost);
 
 export const netWorth = (p) => p.money + ownedBy(p.id).reduce((s, i) => s + propValue(i), 0);
 export const liquidation = (p) => ownedBy(p.id).reduce((s, i) => s + sellValue(i), 0);

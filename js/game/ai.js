@@ -8,7 +8,7 @@ import { store } from '../core/store.js';
 import { rand } from '../core/rng.js';
 import {
   alivePlayers, rentOf, baseRent, resortCount, groupCount, groupComplete, completedGroups, citiesOf,
-  ownedBy, propValue, sellValue, buyoutCost, criticalTiles,
+  ownedBy, propValue, sellValue, buyoutCost, criticalTiles, netWorth,
 } from './rules.js';
 
 const props = () => store.state.props;
@@ -63,7 +63,7 @@ export const AI = {
     return v;
   },
 
-  /** Mua lại ô i của X sẽ phá thế độc quyền của X tới mức nào (chỉ thành phố) */
+  /** Mua đứt ô i của X sẽ phá thế độc quyền của X tới mức nào (chỉ thành phố) */
   disruptOf(i, X) {
     if (X == null) return 0;
     const t = TILES[i];
@@ -141,7 +141,6 @@ export const AI = {
     danger /= TILE_COUNT;
     const wantLeave = unowned >= 4 && danger < p.money * 0.06;
     if (!wantLeave) return 'roll';
-    if (p.escape > 0) return 'card';
     if (canPay && p.money - ISLAND_FEE >= AI.reserve(p) + 100) return 'pay';
     return 'roll';
   },
@@ -193,7 +192,7 @@ export const AI = {
       } else if (t.type === 'island') {
         s -= 40;
       } else if (t.type === 'tax') {
-        s -= cash * TAX_RATE * 0.5;
+        s -= netWorth(p) * TAX_RATE * 0.5;
       }
       if (s > bestScore) {
         bestScore = s;
@@ -216,7 +215,7 @@ export const AI = {
       const L = props()[i].level;
       const cost = t.eco.costs[L + 1];
       if (p.money - cost < reserve * 0.8) return;
-      const score = (t.eco.rents[L + 1] - t.eco.rents[L]) / cost + (groupComplete(t.group, p.id) ? 0.5 : 0);
+      const score = (t.eco.rents[L + 1] - t.eco.rents[L]) / cost + (groupComplete(t.group, p.id) ? 0.5 : 0) + (L === 3 ? 0.6 : 0);
       if (score > bestScore) {
         bestScore = score;
         best = i;
@@ -225,21 +224,18 @@ export const AI = {
     return best;
   },
 
-  freeUpgradeTarget(p, cands) {
-    const score = (i) => {
-      const L = props()[i].level;
-      return TILES[i].eco.rents[L + 1] - TILES[i].eco.rents[L] + (store.state.festival.tile === i ? 1000 : 0);
-    };
+  /** Động Đất: phá công trình đem lại nhiều tiền thuê nhất cho đối thủ; ưu tiên phá Biểu Tượng (mất bảo hộ) */
+  earthquakeTarget(p, cands) {
+    const leader = alivePlayers().filter((o) => o.id !== p.id).sort((a, b) => netWorth(b) - netWorth(a))[0];
+    const score = (i) => rentOf(i) + (props()[i].level === 4 ? 300 : 0) + (leader && props()[i].owner === leader.id ? 100 : 0);
     return cands.slice().sort((a, b) => score(b) - score(a))[0];
   },
 
-  sellHouseTarget(p, cands) {
-    const loss = (i) => {
-      const L = props()[i].level;
-      const t = TILES[i];
-      return t.eco.rents[L] - t.eco.rents[L - 1] + (L === 1 ? 500 + (groupComplete(t.group, p.id) ? 500 : 0) : 0);
-    };
-    return cands.slice().sort((a, b) => loss(a) - loss(b))[0];
+  /** Mất Điện: cắt thành phố thu tiền thuê cao nhất của đối thủ; không có thì bỏ qua */
+  outageTarget(p, cands) {
+    const theirs = cands.filter((i) => props()[i].owner !== p.id);
+    if (!theirs.length) return null;
+    return theirs.sort((a, b) => rentOf(b) - rentOf(a))[0];
   },
 
   evictTarget(p, cands) {
@@ -277,8 +273,57 @@ export const AI = {
     return list;
   },
 
-  useShield(p, rent) {
-    return rent >= 120 || rent > p.money * 0.35;
+  /** Đánh giá nhanh việc dừng ở ô j (điểm càng cao càng có lợi) */
+  landingScore(p, j) {
+    const t = TILES[j];
+    const pr = props()[j];
+    if (t.type === 'city' || t.type === 'resort') {
+      if (pr.owner == null) {
+        const price = t.type === 'resort' ? RESORT_PRICE : t.eco.value[1];
+        return price <= p.money ? 30 + AI.gainOf(j, p.id) + AI.threatOf(j, p.id) : 0;
+      }
+      if (pr.owner === p.id) return t.type === 'city' && pr.level < 4 ? 20 : 5;
+      const rent = rentOf(j);
+      return -(rent > p.money ? rent * 2 : rent);
+    }
+    switch (t.type) {
+      case 'start':
+        return 60;
+      case 'festival':
+        return citiesOf(p.id).length ? 30 : 0;
+      case 'tour':
+        return 20;
+      case 'chance':
+        return 10;
+      case 'island':
+        return -60;
+      case 'tax':
+        return -netWorth(p) * TAX_RATE;
+      default:
+        return 0;
+    }
+  },
+
+  /** Lắc thường hay dùng Chẵn/Lẻ: so sánh kỳ vọng của từng cách lắc */
+  rollChoice(p, d) {
+    if (!(d.parity > 0)) return 'roll';
+    const sum = { all: 0, even: 0, odd: 0 };
+    const weight = { all: 0, even: 0, odd: 0 };
+    for (let n = 2; n <= 12; n++) {
+      const prob = 6 - Math.abs(n - 7);
+      const score = AI.landingScore(p, (p.pos + n) % TILE_COUNT);
+      const k = n % 2 === 0 ? 'even' : 'odd';
+      sum.all += prob * score;
+      weight.all += prob;
+      sum[k] += prob * score;
+      weight[k] += prob;
+    }
+    const base = sum.all / weight.all;
+    const even = sum.even / weight.even;
+    const odd = sum.odd / weight.odd;
+    // Chỉ dùng khi lợi thế rõ rệt: né được tiền thuê lớn hoặc nhắm trúng ô quan trọng
+    if (Math.max(even, odd) - base < 45) return 'roll';
+    return even >= odd ? 'even' : 'odd';
   },
 
   selectTarget(p, d) {
@@ -287,10 +332,10 @@ export const AI = {
         return AI.startTarget(p, d.cands);
       case 'festival':
         return AI.festivalTarget(p, d.cands);
-      case 'freeUp':
-        return AI.freeUpgradeTarget(p, d.cands);
-      case 'sellHouse':
-        return AI.sellHouseTarget(p, d.cands);
+      case 'earthquake':
+        return AI.earthquakeTarget(p, d.cands);
+      case 'outage':
+        return AI.outageTarget(p, d.cands);
       case 'evict':
         return AI.evictTarget(p, d.cands);
       default:
@@ -302,7 +347,7 @@ export const AI = {
   decide(p, kind, d = {}) {
     switch (kind) {
       case 'roll':
-        return 'roll';
+        return AI.rollChoice(p, d);
       case 'island':
         return AI.islandChoice(p, d.canPay);
       case 'tour':
@@ -315,8 +360,6 @@ export const AI = {
         return AI.wantBuyout(p, d.i, d.cost);
       case 'resort':
         return AI.wantResort(p, d.i);
-      case 'shield':
-        return AI.useShield(p, d.rent);
       case 'select':
         return AI.selectTarget(p, d);
       case 'sell':

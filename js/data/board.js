@@ -33,7 +33,7 @@ export const TILES = [
   { type: 'city', name: 'Seoul', group: 3, price: 180 },
   { type: 'chance', name: 'CƠ HỘI', icon: '🎁' },
   { type: 'city', name: 'Tokyo', group: 3, price: 200 },
-  { type: 'festival', name: 'LỄ HỘI THẾ GIỚI', label: 'LỄ HỘI<br>THẾ GIỚI', icon: '🎉', prop: '🎡', sub: 'Thuê x2 → x4' },
+  { type: 'festival', name: 'LỄ HỘI THẾ GIỚI', label: 'LỄ HỘI<br>THẾ GIỚI', icon: '🎉', prop: '🎡', sub: 'Thuê x2 → x5' },
   { type: 'city', name: 'Cairo', group: 4, price: 220 },
   { type: 'city', name: 'Istanbul', group: 4, price: 220 },
   { type: 'city', name: 'Dubai', group: 4, price: 240 },
@@ -47,7 +47,7 @@ export const TILES = [
   { type: 'city', name: 'London', group: 6, price: 320 },
   { type: 'resort', name: 'Hawaii' },
   { type: 'city', name: 'Los Angeles', group: 7, price: 350 },
-  { type: 'tax', name: 'THUẾ', icon: '💸', sub: '10% tiền mặt' },
+  { type: 'tax', name: 'THUẾ', icon: '💸', sub: '10% tài sản' },
   { type: 'city', name: 'New York', group: 7, price: 400 },
 ];
 
@@ -82,33 +82,25 @@ export function gridPos(i) {
 }
 
 export const SPECIAL_DESC = {
-  start: 'Đi qua nhận <b>$300K</b>. Dừng đúng ô này được chọn nâng cấp 1 thành phố đang sở hữu (tối đa Nhà cấp 3).',
-  island: 'Dừng tại đây bị kẹt <b>3 lượt</b>. Thoát bằng cách đổ xúc xắc đôi, trả <b>$200K</b> hoặc dùng thẻ Thuyền Cứu Hộ.',
-  festival: 'Chọn 1 thành phố của bạn tổ chức Lễ Hội: tiền thuê <b>x2</b>, các lần tổ chức sau tăng lên <b>x3, x4</b>. Mỗi lúc chỉ 1 thành phố tổ chức Lễ Hội.',
-  tour: 'Lượt kế tiếp được trả <b>$50K</b> để bay tới bất kỳ ô nào trên bàn cờ (bay qua Bắt Đầu vẫn nhận lương).',
-  chance: 'Rút 1 thẻ Cơ Hội ngẫu nhiên: nhận thưởng, nộp phạt, ép bán nhà, trôi dạt ra Đảo Hoang, miễn phí nâng cấp…',
-  tax: 'Nộp <b>10%</b> số tiền mặt đang có cho ngân hàng.',
+  start: 'Đi qua hoặc dừng lại đều nhận <b>$300K</b>. Dừng đúng ô này được trả tiền nâng 1 thành phố của mình thêm <b>1 cấp</b> (kể cả Khách sạn lên Biểu Tượng).',
+  island: 'Dừng tại đây bị kẹt <b>3 lượt</b>. Thoát bằng cách đổ xúc xắc đôi (đi luôn nhưng không được thêm lượt) hoặc trả <b>$200K</b>. Thẻ Thoát Đảo tự dùng khi rơi vào đây. Hết 3 lượt thì lượt sau tự đi.',
+  festival: 'Chọn 1 thành phố của bạn tổ chức Lễ Hội: tiền thuê <b>x2</b>, các lần tổ chức sau tăng lên <b>x3, x4, x5</b>. Mỗi lúc chỉ 1 thành phố tổ chức Lễ Hội.',
+  tour: 'Lượt kế tiếp được trả <b>$50K</b> để bay tới bất kỳ ô nào trên bàn cờ (bay qua Bắt Đầu vẫn nhận lương). Không đủ tiền thì lắc như thường.',
+  chance: 'Rút 1 thẻ Cơ Hội: Động Đất, Mất Điện, Cưỡng Chế Bán, Giảm Giá 50%, Thoát Đảo Hoang, Vé Lễ Hội, Vé Máy Bay, Về Bắt Đầu hoặc Đắm Tàu.',
+  tax: 'Nộp <b>10% tổng tài sản</b> (tiền mặt + giá trị bất động sản) cho ngân hàng.',
 };
 
 export const CHANCE_CARDS = [
-  { id: 'lottery', icon: '🎰', title: 'Trúng Xổ Số!', text: 'Nhận ngay $200K từ ngân hàng.', good: true },
-  { id: 'bonus', icon: '💼', title: 'Thưởng Dự Án', text: 'Dự án thành công rực rỡ. Nhận $100K.', good: true },
-  { id: 'refund', icon: '🧾', title: 'Hoàn Thuế', text: 'Ngân hàng hoàn lại cho bạn $150K.', good: true },
-  { id: 'birthday', icon: '🎂', title: 'Sinh Nhật Vui Vẻ', text: 'Mỗi người chơi khác tặng bạn $50K.', good: true },
-  { id: 'fine', icon: '🚨', title: 'Vượt Đèn Đỏ', text: 'Nộp phạt $100K cho ngân hàng.', good: false },
-  { id: 'hospital', icon: '🏥', title: 'Viện Phí', text: 'Bạn bị cảm nặng. Trả $150K viện phí.', good: false },
-  { id: 'repair', icon: '🔧', title: 'Bảo Trì Công Trình', text: 'Trả $20K cho mỗi cấp nhà bạn đang sở hữu.', good: false },
-  { id: 'charity', icon: '🤝', title: 'Quỹ Từ Thiện', text: 'Tặng mỗi người chơi khác $30K.', good: false },
-  { id: 'shipwreck', icon: '🌊', title: 'Đắm Tàu!', text: 'Bạn trôi dạt thẳng tới Đảo Hoang (không qua Bắt Đầu).', good: false },
-  { id: 'home', icon: '🏁', title: 'Về Nhà', text: 'Bay thẳng về ô BẮT ĐẦU và nhận $300K.', good: true },
+  { id: 'earthquake', icon: '🌋', title: 'Động Đất', text: 'Chọn 1 thành phố của đối thủ để phá hủy 1 cấp công trình (Biểu Tượng cũng bị hạ xuống Khách sạn).', good: true },
+  { id: 'outage', icon: '🔌', title: 'Mất Điện', text: 'Chọn 1 thành phố trên bàn cờ: thành phố đó không thu được tiền thuê trong 3 vòng.', good: true },
+  { id: 'evict', icon: '📜', title: 'Cưỡng Chế Bán', text: 'Chọn 1 thành phố của đối thủ (chưa là Biểu Tượng): buộc bán lại cho ngân hàng.', good: true },
+  { id: 'coupon', icon: '🏷️', title: 'Giảm Giá 50%', text: 'Giữ thẻ này: lần mua đất, xây nhà hoặc mua đứt tiếp theo chỉ trả một nửa.', good: true },
+  { id: 'boat', icon: '🛶', title: 'Thoát Đảo Hoang', text: 'Giữ thẻ này: tự động dùng để rời đi ngay khi rơi vào Đảo Hoang.', good: true },
   { id: 'festival', icon: '🎉', title: 'Vé Lễ Hội', text: 'Tiến tới ô Lễ Hội Thế Giới.', good: true },
   { id: 'ticket', icon: '🎫', title: 'Vé Máy Bay', text: 'Tiến tới ô Chuyến Bay Thế Giới.', good: true },
-  { id: 'back3', icon: '↩️', title: 'Quên Hộ Chiếu', text: 'Quay lại 3 ô để lấy hộ chiếu.', good: false },
-  { id: 'vacation', icon: '🏖️', title: 'Kỳ Nghỉ Bất Ngờ', text: 'Tiến tới Khu Nghỉ Dưỡng gần nhất phía trước.', good: true },
-  { id: 'freeUp', icon: '🛠️', title: 'Miễn Phí Nâng Cấp', text: 'Nâng 1 thành phố của bạn thêm 1 cấp miễn phí (tối đa Nhà cấp 3).', good: true },
-  { id: 'shield', icon: '🛡️', title: 'Thẻ Miễn Thuê', text: 'Giữ thẻ này: miễn trả tiền thuê 1 lần.', good: true },
-  { id: 'boat', icon: '🛶', title: 'Thuyền Cứu Hộ', text: 'Giữ thẻ này: rời Đảo Hoang miễn phí 1 lần.', good: true },
-  { id: 'sellHouse', icon: '🏚️', title: 'Ép Bán Nhà', text: 'Bạn phải bán bớt 1 cấp nhà của một thành phố (nhận lại 50%).', good: false },
-  { id: 'evict', icon: '📜', title: 'Thu Hồi Đất', text: 'Chọn 1 thành phố của đối thủ (chưa là Biểu Tượng): buộc bán lại cho ngân hàng.', good: true },
+  { id: 'home', icon: '🏁', title: 'Về Bắt Đầu', text: 'Bay thẳng về ô BẮT ĐẦU và nhận $300K.', good: true },
+  { id: 'shipwreck', icon: '🌊', title: 'Đắm Tàu!', text: 'Bạn trôi dạt thẳng tới Đảo Hoang (không qua Bắt Đầu).', good: false },
 ];
+/** Bộ bài: thẻ chiến thuật có 2 lá, thẻ di chuyển 1 lá */
+export const CHANCE_DECK = ['earthquake', 'earthquake', 'outage', 'outage', 'evict', 'evict', 'coupon', 'coupon', 'boat', 'boat', 'festival', 'ticket', 'home', 'shipwreck'];
 export const CARD_BY_ID = Object.fromEntries(CHANCE_CARDS.map((c) => [c.id, c]));

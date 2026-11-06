@@ -112,8 +112,9 @@ export function renderPlayers() {
     if (p.bankrupt) chips.push('<span class="chip chip-bad">💀 Phá sản</span>');
     if (p.island > 0) chips.push(`<span class="chip" title="Đang kẹt trên Đảo Hoang">🏝️ ${p.island}</span>`);
     if (p.tour) chips.push('<span class="chip" title="Lượt sau được bay">✈️ Bay</span>');
-    if (p.freeRent > 0) chips.push(`<span class="chip" title="Thẻ Miễn Thuê">🛡️ ${p.freeRent}</span>`);
-    if (p.escape > 0) chips.push(`<span class="chip" title="Thuyền Cứu Hộ">🛶 ${p.escape}</span>`);
+    if (p.parity > 0) chips.push(`<span class="chip" title="Số lần chọn Chẵn/Lẻ còn lại">🎯 ${p.parity}</span>`);
+    if (p.coupon > 0) chips.push(`<span class="chip chip-gold" title="Thẻ Giảm Giá 50%">🏷️ ${p.coupon}</span>`);
+    if (p.escape > 0) chips.push(`<span class="chip" title="Thẻ Thoát Đảo Hoang">🛶 ${p.escape}</span>`);
     const g = completedGroups(p.id);
     if (g > 0) chips.push(`<span class="chip chip-gold" title="Số nhóm màu độc quyền">🎨 ${g}/3</span>`);
     const rc = resortCount(p.id);

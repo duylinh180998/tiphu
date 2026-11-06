@@ -5,7 +5,7 @@
 export const SAVE_KEY = 'cotyphu.save.v1';
 export const SETTINGS_KEY = 'cotyphu.settings.v1';
 export const NET_KEY = 'cotyphu.net.v1';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2; // đổi khi luật/định dạng ván thay đổi: ván lưu cũ bị bỏ qua
 
 // ---------- Bàn cờ ----------
 export const TILE_COUNT = 32;
@@ -21,11 +21,17 @@ export const ISLAND_FEE = 200;
 export const ISLAND_TURNS = 3;
 export const TOUR_FEE = 50;
 export const RESORT_PRICE = 200;
-export const RESORT_RENTS = [0, 50, 100, 200, 400];
-export const TAX_RATE = 0.1;
+export const RESORT_RENTS = [0, 50, 100, 200, 400]; // 4 khu = thắng ngay
+export const TAX_RATE = 0.1; // 10% tổng tài sản (tiền mặt + bất động sản)
 export const SELL_RATE = 0.5;
 export const BUYOUT_RATE = 2;
-export const FESTIVAL_MULTS = [2, 3, 4];
+export const FESTIVAL_MULTS = [2, 3, 4, 5];
+export const MONOPOLY_MULT = 2; // sở hữu trọn nhóm màu: tiền thuê cả nhóm x2
+export const FIRST_LAP_MAX_LEVEL = 2; // chưa qua Bắt Đầu lần nào: mua đất tối đa tới Tòa nhà
+export const PARITY_USES = 3; // số lần chọn Chẵn/Lẻ mỗi ván
+export const OUTAGE_ROUNDS = 3; // thẻ Mất Điện: số vòng thành phố không thu được thuê
+export const COUPON_RATE = 0.5; // thẻ Giảm Giá: trả 50% cho lần mua/xây/mua đứt tiếp theo
+export const DEFAULT_ROUNDS = 30;
 export const INFLATION_START = 40; // từ vòng 41 tiền thuê bắt đầu tăng
 export const INFLATION_STEP = 0.05; // +5% mỗi vòng
 export const MAX_LOG = 160;
@@ -34,8 +40,8 @@ export const MAX_LOG = 160;
 export const COST_MULT = [0, 1, 0.5, 0.5, 1];
 export const RENT_MULT = [0, 0.35, 0.9, 1.75, 3.2];
 
-export const LEVEL_ICONS = ['', '🏠', '🏘️', '🏢', '🗼'];
-export const LEVEL_NAMES = ['Đất trống', 'Nhà cấp 1', 'Nhà cấp 2', 'Nhà cấp 3', 'Biểu Tượng'];
+export const LEVEL_ICONS = ['', '🏠', '🏢', '🏨', '🗼'];
+export const LEVEL_NAMES = ['Đất trống', 'Nhà nhỏ', 'Tòa nhà', 'Khách sạn', 'Biểu Tượng'];
 
 // ---------- Người chơi ----------
 export const MAX_PLAYERS = 4;
@@ -60,7 +66,7 @@ export const SPEEDS = {
 export const SPEED_ORDER = ['slow', 'normal', 'fast', 'turbo'];
 
 // ---------- Trực tuyến ----------
-export const NET_PROTOCOL = 1;
+export const NET_PROTOCOL = 2; // tăng khi luật hoặc giao thức đổi: máy khác phiên bản bị từ chối kèm lời nhắc tải lại trang
 export const ROOM_PREFIX = 'cotyphu-v1-';
 export const ROOM_CODE_LENGTH = 6;
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

@@ -4,17 +4,17 @@
  */
 import {
   SAVE_VERSION, TILE_COUNT, START_TILE, ISLAND_TILE, FESTIVAL_TILE, TOUR_TILE, TAX_TILE, START_SALARY, ISLAND_FEE,
-  ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, SELL_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP,
-  LEVEL_ICONS, LEVEL_NAMES, MAX_LOG,
+  ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP, LEVEL_ICONS,
+  LEVEL_NAMES, MAX_LOG, FIRST_LAP_MAX_LEVEL, PARITY_USES, OUTAGE_ROUNDS,
 } from '../config.js';
-import { TILES, RESORT_TILES, CITY_TILES, CHANCE_CARDS, CARD_BY_ID } from '../data/board.js';
+import { TILES, CITY_TILES, CHANCE_DECK, CARD_BY_ID } from '../data/board.js';
 import { store, S, saveGame } from '../core/store.js';
 import { sleep, Session, GameOver, TurnAbort, Cancelled } from '../core/session.js';
 import { rand, shuffle } from '../core/rng.js';
-import { fmt, fmtFull, r5, esc } from '../core/util.js';
+import { fmt, fmtFull, esc } from '../core/util.js';
 import {
-  P, isBot, alivePlayers, ownedBy, citiesOf, resortCount, totalLevels, sellValue, buyoutCost, rentOf, netWorth,
-  liquidation, nextFestivalMult, winConditionFor,
+  P, isBot, alivePlayers, ownedBy, citiesOf, resortCount, sellValue, buyoutCost, rentOf, netWorth, liquidation,
+  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted,
 } from './rules.js';
 import { ask } from './players.js';
 import { AI } from './ai.js';
@@ -48,11 +48,13 @@ export function createState(cfg) {
       outRound: 0,
       island: 0,
       tour: false,
-      freeRent: 0,
-      escape: 0,
+      laps: 0, // số lần đã qua/dừng ô Bắt Đầu (vòng 1 của người chơi: laps = 0)
+      parity: PARITY_USES, // số lần chọn Chẵn/Lẻ còn lại
+      coupon: 0, // thẻ Giảm Giá 50% đang giữ
+      escape: 0, // thẻ Thoát Đảo Hoang đang giữ
       online: pc.type === 'remote' ? true : undefined,
     })),
-    props: TILES.map((t) => (t.type === 'city' || t.type === 'resort' ? { owner: null, level: 0 } : null)),
+    props: TILES.map((t) => (t.type === 'city' || t.type === 'resort' ? { owner: null, level: 0, outage: 0 } : null)),
     festival: { tile: null, mult: 1, editions: 0 },
     current: 0,
     round: 1,
@@ -78,7 +80,7 @@ export function log(html, kind = '') {
 
 export function startNewGame(cfg) {
   store.state = createState(cfg);
-  st().deck = shuffle(CHANCE_CARDS.map((c) => c.id));
+  st().deck = shuffle([...CHANCE_DECK]);
   const humans = st().players.filter((p) => !isBot(p)).length;
   const mode = cfg.online ? ' (trực tuyến)' : humans >= 2 ? ' (Pass & Play)' : '';
   log(`🎲 Ván đấu bắt đầu với ${st().players.length} người chơi${mode}. Chúc may mắn!`, 'good');
@@ -147,12 +149,21 @@ function nextPlayer() {
     }
     s.round++;
     log(`Vòng ${s.round}`, 'round');
+    tickOutages();
     if (s.round === INFLATION_START + 1) {
       const pct = Math.round(INFLATION_STEP * 100);
       log(`📈 Bắt đầu <b>lạm phát</b>: từ vòng này tiền thuê tăng thêm ${pct}% mỗi vòng!`, 'bad');
       view.toast(`📈 Lạm phát! Tiền thuê tăng ${pct}% mỗi vòng`, 'warn', 3200);
     }
   }
+}
+
+/** Đầu mỗi vòng: giảm thời gian Mất Điện của các thành phố */
+function tickOutages() {
+  CITY_TILES.forEach((i) => {
+    const pr = st().props[i];
+    if (pr.outage > 0 && --pr.outage === 0) log(`💡 ${tn(i)} đã có điện trở lại.`, 'good');
+  });
 }
 
 async function turnIntro(p, bonus) {
@@ -198,10 +209,23 @@ async function rollSegment(p) {
 }
 
 async function rollDice(p, { auto = false } = {}) {
-  if (!auto) await ask(p, 'roll', { bonus: st().doubles > 0 });
-  else if (isBot(p)) await sleep(S().bot);
-  const d1 = 1 + Math.floor(rand() * 6);
-  const d2 = 1 + Math.floor(rand() * 6);
+  let parity = null;
+  if (!auto) {
+    const choice = await ask(p, 'roll', { bonus: st().doubles > 0, parity: p.parity });
+    if ((choice === 'even' || choice === 'odd') && p.parity > 0) {
+      p.parity--;
+      parity = choice;
+      log(`🎯 ${pn(p)} chọn đổ <b>${choice === 'even' ? 'CHẴN' : 'LẺ'}</b> (còn ${p.parity} lần).`);
+      view.sync();
+    }
+  } else if (isBot(p)) await sleep(S().bot);
+  // Chọn Chẵn/Lẻ: lắc lại (bằng bộ sinh số có seed) cho tới khi tổng đúng tính chẵn lẻ
+  let d1;
+  let d2;
+  do {
+    d1 = 1 + Math.floor(rand() * 6);
+    d2 = 1 + Math.floor(rand() * 6);
+  } while (parity && ((d1 + d2) % 2 === 0) !== (parity === 'even'));
   st().lastRoll = [d1, d2];
   view.status(`${pn(p)} đang lắc…`);
   await view.dice(d1, d2);
@@ -213,15 +237,7 @@ async function rollDice(p, { auto = false } = {}) {
 }
 
 async function islandSegment(p) {
-  const choice = await ask(p, 'island', { canPay: p.money >= ISLAND_FEE, escape: p.escape, turns: p.island });
-  if (choice === 'card' && p.escape > 0) {
-    p.escape--;
-    p.island = 0;
-    log(`🛶 ${pn(p)} dùng Thuyền Cứu Hộ rời Đảo Hoang miễn phí!`, 'good');
-    view.sound('chance');
-    view.sync();
-    return rollSegment(p);
-  }
+  const choice = await ask(p, 'island', { canPay: p.money >= ISLAND_FEE, turns: p.island });
   if (choice === 'pay' && p.money >= ISLAND_FEE) {
     log(`💵 ${pn(p)} trả ${fmtFull(ISLAND_FEE)} để rời Đảo Hoang.`, 'pay');
     await pay(p, ISLAND_FEE, null);
@@ -232,7 +248,7 @@ async function islandSegment(p) {
   const [d1, d2] = await rollDice(p, { auto: true });
   if (d1 === d2) {
     p.island = 0;
-    log(`🎉 ${pn(p)} đổ được đôi và thoát khỏi Đảo Hoang!`, 'good');
+    log(`🎉 ${pn(p)} đổ được đôi và thoát khỏi Đảo Hoang (đi luôn, không được thêm lượt)!`, 'good');
     view.toast(`🎉 ${esc(p.name)} thoát khỏi Đảo Hoang!`, 'good');
     await moveSteps(p, d1 + d2);
     await landOn(p);
@@ -286,15 +302,8 @@ async function moveSteps(p, steps) {
   }
 }
 
-async function moveBack(p, steps) {
-  for (let s = 0; s < steps; s++) {
-    p.pos = (p.pos - 1 + TILE_COUNT) % TILE_COUNT;
-    view.step(p.id, p.pos);
-    await sleep(S().step);
-  }
-}
-
 function passStart(p) {
+  p.laps++;
   p.money += START_SALARY;
   view.moneyFx(p.id, START_SALARY);
   view.sound('coin');
@@ -324,12 +333,16 @@ async function sendToIsland(p) {
 // ===================================================================
 // Tiền & phá sản
 // ===================================================================
-function gain(p, amount) {
-  if (amount <= 0) return;
-  p.money += amount;
-  view.moneyFx(p.id, amount);
-  view.sound('cash');
-  view.sync();
+/** Trả tiền mua đất / xây nhà / mua đứt; tự dùng thẻ Giảm Giá nếu đang giữ. Trả về số tiền thực trả. */
+function spendOnProperty(p, baseCost) {
+  const cost = discounted(p, baseCost);
+  if (cost < baseCost) {
+    p.coupon--;
+    log(`🏷️ ${pn(p)} dùng thẻ Giảm Giá 50% — chỉ trả ${fmtFull(cost)} thay vì ${fmtFull(baseCost)}.`, 'good');
+  }
+  p.money -= cost;
+  view.moneyFx(p.id, -cost);
+  return cost;
 }
 
 /** Thanh toán. Thiếu tiền: buộc bán tài sản; không đủ thì phá sản. Trả về false nếu phá sản. */
@@ -504,7 +517,7 @@ async function onCity(p, i) {
     return;
   }
   if (pr.owner === p.id) {
-    await offerUpgrade(p, i, { landmark: true, title: 'Nâng cấp' });
+    await offerUpgrade(p, i, { title: 'Nâng cấp' });
     return;
   }
   await chargeRent(p, P(pr.owner), i);
@@ -513,31 +526,38 @@ async function onCity(p, i) {
 
 async function offerPurchase(p, i) {
   const t = TILES[i];
-  const options = [1, 2, 3].map((L) => ({ level: L, cost: t.eco.value[L], rent: t.eco.rents[L] }));
+  // Chưa đi qua Bắt Đầu lần nào: chỉ được mua tới Tòa nhà; từ vòng 2 được mua thẳng lên Khách sạn
+  const maxLevel = p.laps > 0 ? 3 : FIRST_LAP_MAX_LEVEL;
+  const options = [];
+  for (let L = 1; L <= maxLevel; L++) options.push({ level: L, cost: discounted(p, t.eco.value[L]), rent: t.eco.rents[L] });
   if (p.money < options[0].cost) {
     log(`${pn(p)} không đủ tiền mua ${tn(i)} (${fmtFull(options[0].cost)}).`);
     if (!isBot(p)) view.toast(`Không đủ tiền mua ${esc(t.name)}`, 'bad');
     return;
   }
-  const level = await ask(p, 'purchase', { i, options });
+  const level = await ask(p, 'purchase', { i, options, firstLap: p.laps === 0 });
   if (!level) {
     log(`${pn(p)} bỏ qua ${tn(i)}.`);
     return;
   }
-  const cost = t.eco.value[level];
+  const cost = spendOnProperty(p, t.eco.value[level]);
   const pr = st().props[i];
-  p.money -= cost;
   pr.owner = p.id;
   pr.level = level;
-  view.moneyFx(p.id, -cost);
   log(`🏗️ ${pn(p)} mua ${tn(i)} — ${LEVEL_ICONS[level]} ${LEVEL_NAMES[level]} (${fmtFull(cost)}).`, 'buy');
   view.sound('buy');
   view.tileFx(i, LEVEL_ICONS[level], 'build');
+  if (hasMonopoly(i)) log(`🎨 ${pn(p)} sở hữu trọn nhóm màu — tiền thuê cả nhóm <b>x2</b>!`, 'good');
   view.sync();
   checkWin();
 }
 
-async function offerUpgrade(p, i, { landmark = true, title = 'Nâng cấp' } = {}) {
+/**
+ * Nâng cấp thành phố của chính mình.
+ * - Mặc định: dưới Khách sạn được nâng tới Khách sạn; đang là Khách sạn thì được xây Biểu Tượng.
+ * - single: chỉ nâng thêm đúng 1 cấp (đặc quyền khi dừng ở ô Bắt Đầu).
+ */
+async function offerUpgrade(p, i, { title = 'Nâng cấp', single = false } = {}) {
   const t = TILES[i];
   const pr = st().props[i];
   if (t.type !== 'city' || pr.owner !== p.id) return;
@@ -545,14 +565,10 @@ async function offerUpgrade(p, i, { landmark = true, title = 'Nâng cấp' } = {
     log(`🗼 ${tn(i)} của ${pn(p)} đã là Biểu Tượng.`);
     return;
   }
-  const maxLevel = pr.level < 3 ? 3 : landmark ? 4 : 3;
+  const maxLevel = single ? pr.level + 1 : pr.level < 3 ? 3 : 4;
   const options = [];
   for (let L = pr.level + 1; L <= maxLevel; L++) {
-    options.push({ level: L, cost: t.eco.value[L] - t.eco.value[pr.level], rent: t.eco.rents[L] });
-  }
-  if (!options.length) {
-    log(`${tn(i)} đã đạt Nhà cấp 3 — hãy dừng lại đây lần nữa để xây Biểu Tượng.`);
-    return;
+    options.push({ level: L, cost: discounted(p, t.eco.value[L] - t.eco.value[pr.level]), rent: t.eco.rents[L] });
   }
   if (!options.some((o) => o.cost <= p.money)) {
     log(`${pn(p)} không đủ tiền nâng cấp ${tn(i)}.`);
@@ -561,12 +577,10 @@ async function offerUpgrade(p, i, { landmark = true, title = 'Nâng cấp' } = {
   }
   const level = await ask(p, 'upgrade', { i, options, title });
   if (!level) return;
-  const cost = t.eco.value[level] - t.eco.value[pr.level];
-  p.money -= cost;
+  const cost = spendOnProperty(p, t.eco.value[level] - t.eco.value[pr.level]);
   pr.level = level;
-  view.moneyFx(p.id, -cost);
   if (level === 4) {
-    log(`🗼 ${pn(p)} xây BIỂU TƯỢNG tại ${tn(i)} (${fmtFull(cost)}) — không ai có thể mua lại!`, 'buy');
+    log(`🗼 ${pn(p)} xây BIỂU TƯỢNG tại ${tn(i)} (${fmtFull(cost)}) — không ai có thể mua đứt!`, 'buy');
     view.sound('landmark');
     view.tileFx(i, '🗼', 'build big');
     view.toast(`🗼 ${esc(p.name)} xây Biểu Tượng tại ${esc(t.name)}!`, 'gold');
@@ -579,21 +593,17 @@ async function offerUpgrade(p, i, { landmark = true, title = 'Nâng cấp' } = {
 }
 
 async function chargeRent(p, owner, i) {
+  if (isOutage(i)) {
+    log(`🔌 ${tn(i)} đang mất điện — ${pn(p)} không phải trả tiền thuê.`, 'good');
+    view.tileFx(i, '🔌', 'gain');
+    return;
+  }
   const rent = rentOf(i);
   if (rent <= 0) return;
-  if (p.freeRent > 0) {
-    const use = await ask(p, 'shield', { i, rent, owner: owner.id, cards: p.freeRent });
-    if (use) {
-      p.freeRent--;
-      log(`🛡️ ${pn(p)} dùng Thẻ Miễn Thuê tại ${tn(i)} (tiết kiệm ${fmtFull(rent)}).`, 'good');
-      view.sound('chance');
-      view.tileFx(i, '🛡️', 'gain');
-      view.sync();
-      return;
-    }
-  }
-  const fest = TILES[i].type === 'city' && st().festival.tile === i ? ` (🎉x${st().festival.mult})` : '';
-  log(`💸 ${pn(p)} trả ${fmtFull(rent)} tiền thuê${fest} cho ${pn(owner)} tại ${tn(i)}.`, 'pay');
+  const tags = [];
+  if (hasMonopoly(i)) tags.push('🎨x2');
+  if (TILES[i].type === 'city' && st().festival.tile === i) tags.push(`🎉x${st().festival.mult}`);
+  log(`💸 ${pn(p)} trả ${fmtFull(rent)} tiền thuê${tags.length ? ` (${tags.join(' ')})` : ''} cho ${pn(owner)} tại ${tn(i)}.`, 'pay');
   view.tileFx(i, `-${fmt(rent)}`, 'loss');
   await pay(p, rent, owner);
 }
@@ -603,29 +613,30 @@ async function offerBuyout(p, i) {
   const pr = st().props[i];
   if (p.bankrupt || t.type !== 'city' || pr.owner == null || pr.owner === p.id) return;
   if (pr.level >= 4) {
-    log(`🔒 ${tn(i)} là Biểu Tượng — không thể mua lại.`);
+    log(`🔒 ${tn(i)} là Biểu Tượng — không thể mua đứt.`);
     return;
   }
-  const cost = buyoutCost(i);
+  const full = buyoutCost(i);
+  const cost = discounted(p, full);
   const owner = P(pr.owner);
   if (p.money < cost) {
-    if (!isBot(p)) view.toast(`Cần ${fmtFull(cost)} để mua lại ${esc(t.name)}`, 'info');
+    if (!isBot(p)) view.toast(`Cần ${fmtFull(cost)} để mua đứt ${esc(t.name)}`, 'info');
     return;
   }
   const yes = await ask(p, 'buyout', { i, cost });
   if (!yes) return;
-  p.money -= cost;
-  owner.money += cost;
-  view.moneyFx(p.id, -cost);
-  view.moneyFx(owner.id, cost);
+  const paid = spendOnProperty(p, full);
+  owner.money += paid;
+  view.moneyFx(owner.id, paid);
   pr.owner = p.id;
-  log(`💥 ${pn(p)} MUA LẠI ${tn(i)} từ ${pn(owner)} với giá ${fmtFull(cost)}!`, 'buyout');
+  log(`💥 ${pn(p)} MUA ĐỨT ${tn(i)} từ ${pn(owner)} với giá ${fmtFull(paid)}!`, 'buyout');
   view.sound('buyout');
   view.tileFx(i, '💥', 'big');
-  view.toast(`💥 ${esc(p.name)} mua lại ${esc(t.name)} từ ${esc(owner.name)}!`, 'warn');
+  view.toast(`💥 ${esc(p.name)} mua đứt ${esc(t.name)} từ ${esc(owner.name)}!`, 'warn');
   view.sync();
   checkWin();
-  await offerUpgrade(p, i, { landmark: false, title: 'Nâng cấp sau khi mua lại' });
+  // Mua đứt một Khách sạn thì được nâng thẳng lên Biểu Tượng ngay trong lượt
+  await offerUpgrade(p, i, { title: 'Nâng cấp sau khi mua đứt' });
 }
 
 async function onResort(p, i) {
@@ -662,7 +673,7 @@ async function onResort(p, i) {
 async function onStart(p) {
   const cands = citiesOf(p.id).filter((i) => {
     const L = st().props[i].level;
-    return L < 3 && TILES[i].eco.costs[L + 1] <= p.money;
+    return L < 4 && discounted(p, TILES[i].eco.costs[L + 1]) <= p.money;
   });
   if (!cands.length) {
     log(`🏁 ${pn(p)} dừng đúng ô BẮT ĐẦU.`);
@@ -671,7 +682,7 @@ async function onStart(p) {
   const target = await ask(p, 'select', {
     purpose: 'start',
     cands,
-    title: '🏁 Dừng đúng ô <b>BẮT ĐẦU</b>! Chọn 1 thành phố để nâng cấp',
+    title: '🏁 Dừng đúng ô <b>BẮT ĐẦU</b>! Chọn 1 thành phố để nâng thêm <b>1 cấp</b> (Khách sạn lên được Biểu Tượng)',
     cancelLabel: 'Bỏ qua',
   });
   if (target == null) {
@@ -679,21 +690,30 @@ async function onStart(p) {
     return;
   }
   if (isBot(p)) await view.flash(target);
-  await offerUpgrade(p, target, { landmark: false, title: 'Nâng cấp từ ô Bắt Đầu' });
+  await offerUpgrade(p, target, { title: 'Nâng cấp từ ô Bắt Đầu', single: true });
 }
 
 async function onTax(p) {
-  const amt = Math.round(p.money * TAX_RATE);
+  const worth = netWorth(p);
+  const amt = Math.round(worth * TAX_RATE);
   if (amt <= 0) {
-    log(`💸 ${pn(p)} không có tiền mặt để nộp thuế.`);
+    log(`💸 ${pn(p)} không có tài sản để nộp thuế.`);
     return;
   }
-  log(`💸 ${pn(p)} nộp thuế 10% tiền mặt: ${fmtFull(amt)}.`, 'pay');
+  log(`💸 ${pn(p)} nộp thuế 10% tổng tài sản (${fmtFull(worth)}): ${fmtFull(amt)}.`, 'pay');
   view.tileFx(TAX_TILE, `-${fmt(amt)}`, 'loss');
   await pay(p, amt, null);
 }
 
 function onIsland(p) {
+  if (p.escape > 0) {
+    p.escape--;
+    log(`🛶 ${pn(p)} dùng thẻ Thoát Đảo Hoang — rời đảo ngay, không bị kẹt!`, 'good');
+    view.sound('chance');
+    view.toast(`🛶 ${esc(p.name)} dùng thẻ Thoát Đảo Hoang!`, 'good');
+    view.sync();
+    return;
+  }
   p.island = ISLAND_TURNS;
   log(`🏝️ ${pn(p)} mắc kẹt trên Đảo Hoang ${ISLAND_TURNS} lượt!`, 'bad');
   view.sound('island');
@@ -732,7 +752,7 @@ function onTour(p) {
 }
 
 async function onChance(p) {
-  if (!st().deck.length) st().deck = shuffle(CHANCE_CARDS.map((c) => c.id));
+  if (!st().deck.length) st().deck = shuffle([...CHANCE_DECK]);
   const card = CARD_BY_ID[st().deck.pop()];
   view.sound('chance');
   log(`🎁 ${pn(p)} rút thẻ Cơ Hội: <b>${card.icon} ${esc(card.title)}</b>`, 'chance');
@@ -746,43 +766,22 @@ async function onChance(p) {
 
 async function applyCard(p, card) {
   switch (card.id) {
-    case 'lottery':
-      gain(p, 200);
+    case 'earthquake':
+      await cardEarthquake(p);
       break;
-    case 'bonus':
-      gain(p, 100);
+    case 'outage':
+      await cardOutage(p);
       break;
-    case 'refund':
-      gain(p, 150);
+    case 'evict':
+      await cardEvict(p);
       break;
-    case 'birthday':
-      for (const o of st().players) {
-        if (o.id === p.id || o.bankrupt) continue;
-        log(`🎂 ${pn(o)} tặng ${pn(p)} ${fmtFull(50)}.`);
-        await pay(o, 50, p);
-      }
+    case 'coupon':
+      p.coupon++;
+      log(`🏷️ ${pn(p)} giữ thẻ Giảm Giá 50% cho lần mua/xây/mua đứt tiếp theo.`, 'good');
       break;
-    case 'fine':
-      await pay(p, 100, null);
-      break;
-    case 'hospital':
-      await pay(p, 150, null);
-      break;
-    case 'repair': {
-      const lv = totalLevels(p.id);
-      if (lv > 0) {
-        log(`🔧 ${pn(p)} có ${lv} cấp nhà — trả ${fmtFull(lv * 20)} phí bảo trì.`, 'pay');
-        await pay(p, lv * 20, null);
-      } else {
-        log(`🔧 ${pn(p)} chưa có công trình nào — không mất phí.`);
-      }
-      break;
-    }
-    case 'charity':
-      for (const o of st().players) {
-        if (o.id === p.id || o.bankrupt) continue;
-        await pay(p, 30, o);
-      }
+    case 'boat':
+      p.escape++;
+      log(`🛶 ${pn(p)} giữ thẻ Thoát Đảo Hoang.`, 'good');
       break;
     case 'shipwreck':
       await sendToIsland(p);
@@ -799,75 +798,53 @@ async function applyCard(p, card) {
       await flyTo(p, TOUR_TILE);
       await landOn(p);
       break;
-    case 'back3':
-      await moveBack(p, 3);
-      await landOn(p);
-      break;
-    case 'vacation': {
-      const target = RESORT_TILES.find((r) => r > p.pos);
-      await flyTo(p, target == null ? RESORT_TILES[0] : target);
-      await landOn(p);
-      break;
-    }
-    case 'freeUp':
-      await cardFreeUpgrade(p);
-      break;
-    case 'shield':
-      p.freeRent++;
-      break;
-    case 'boat':
-      p.escape++;
-      break;
-    case 'sellHouse':
-      await cardSellHouse(p);
-      break;
-    case 'evict':
-      await cardEvict(p);
-      break;
     default:
       break;
   }
   view.sync();
 }
 
-async function cardFreeUpgrade(p) {
-  const cands = citiesOf(p.id).filter((i) => st().props[i].level < 3);
+async function cardEarthquake(p) {
+  const cands = CITY_TILES.filter((i) => {
+    const pr = st().props[i];
+    return pr.owner != null && pr.owner !== p.id && pr.level >= 2;
+  });
   if (!cands.length) {
-    log(`🛠️ ${pn(p)} không có thành phố phù hợp — nhận ${fmtFull(100)} thay thế.`);
-    gain(p, 100);
+    log('🌋 Đối thủ chưa có công trình nào từ Tòa nhà trở lên — động đất không gây thiệt hại.');
     return;
   }
-  const target = await ask(p, 'select', { purpose: 'freeUp', cands, title: '🛠️ Chọn thành phố được <b>nâng cấp miễn phí</b> thêm 1 cấp' });
+  const target = await ask(p, 'select', { purpose: 'earthquake', cands, title: '🌋 <b>Động Đất</b>: chọn 1 thành phố của đối thủ để phá hủy 1 cấp công trình' });
   if (isBot(p)) await view.flash(target);
   const pr = st().props[target];
-  pr.level++;
-  log(`🛠️ ${pn(p)} nâng cấp miễn phí ${tn(target)} lên ${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}.`, 'good');
-  view.sound('build');
-  view.tileFx(target, LEVEL_ICONS[pr.level], 'build');
+  const owner = P(pr.owner);
+  pr.level--;
+  log(`🌋 Động đất tại ${tn(target)}! Công trình của ${pn(owner)} bị hạ xuống ${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}.`, 'buyout');
+  view.sound('buyout');
+  view.tileFx(target, '🌋', 'big');
   view.sync();
 }
 
-async function cardSellHouse(p) {
-  const cands = citiesOf(p.id).filter((i) => st().props[i].level < 4);
+async function cardOutage(p) {
+  const cands = CITY_TILES.filter((i) => st().props[i].owner != null && !isOutage(i));
   if (!cands.length) {
-    log(`🏚️ ${pn(p)} không có nhà nào phải bán — thoát nạn!`);
+    log('🔌 Chưa có thành phố nào có chủ — thẻ Mất Điện không có tác dụng.');
     return;
   }
-  const target = await ask(p, 'select', { purpose: 'sellHouse', cands, title: '🏚️ <b>Ép bán nhà</b>: chọn thành phố phải bán bớt 1 cấp (nhận lại 50%)' });
-  if (isBot(p)) await view.flash(target);
-  const pr = st().props[target];
-  const refund = r5(TILES[target].eco.costs[pr.level] * SELL_RATE);
-  if (pr.level <= 1) {
-    resetProperty(target);
-    log(`🏚️ ${pn(p)} buộc phải bán ${tn(target)} về ngân hàng, nhận ${fmtFull(refund)}.`, 'bad');
-  } else {
-    pr.level--;
-    log(`🏚️ ${pn(p)} bán bớt 1 cấp nhà tại ${tn(target)}, nhận ${fmtFull(refund)}.`, 'bad');
+  const target = await ask(p, 'select', {
+    purpose: 'outage',
+    cands,
+    title: `🔌 <b>Mất Điện</b>: chọn 1 thành phố — không thu được tiền thuê trong ${OUTAGE_ROUNDS} vòng`,
+    cancelLabel: 'Không dùng',
+  });
+  if (target == null) {
+    log(`🔌 ${pn(p)} không dùng thẻ Mất Điện.`);
+    return;
   }
-  p.money += refund;
-  view.moneyFx(p.id, refund);
-  view.sound('pay');
-  view.tileFx(target, '🏚️', 'loss');
+  if (isBot(p)) await view.flash(target);
+  st().props[target].outage = OUTAGE_ROUNDS;
+  log(`🔌 ${pn(p)} cắt điện ${tn(target)} của ${pn(P(st().props[target].owner))} — không thu tiền thuê trong ${OUTAGE_ROUNDS} vòng!`, 'buyout');
+  view.sound('buyout');
+  view.tileFx(target, '🔌', 'big');
   view.sync();
 }
 
@@ -877,17 +854,17 @@ async function cardEvict(p) {
     return pr.owner != null && pr.owner !== p.id && pr.level < 4;
   });
   if (!cands.length) {
-    log('📜 Không có thành phố nào của đối thủ có thể bị thu hồi.');
+    log('📜 Không có thành phố nào của đối thủ có thể bị cưỡng chế bán.');
     return;
   }
-  const target = await ask(p, 'select', { purpose: 'evict', cands, title: '📜 <b>Thu hồi đất</b>: chọn 1 thành phố của đối thủ buộc bán về ngân hàng' });
+  const target = await ask(p, 'select', { purpose: 'evict', cands, title: '📜 <b>Cưỡng Chế Bán</b>: chọn 1 thành phố của đối thủ buộc bán lại cho ngân hàng' });
   if (isBot(p)) await view.flash(target);
   const owner = P(st().props[target].owner);
   const v = sellValue(target);
   resetProperty(target);
   owner.money += v;
   view.moneyFx(owner.id, v);
-  log(`📜 ${pn(p)} thu hồi ${tn(target)} của ${pn(owner)}! ${pn(owner)} nhận lại ${fmtFull(v)}.`, 'buyout');
+  log(`📜 ${pn(p)} cưỡng chế bán ${tn(target)} của ${pn(owner)}! ${pn(owner)} nhận lại ${fmtFull(v)}.`, 'buyout');
   view.sound('buyout');
   view.tileFx(target, '📜', 'big');
   view.sync();

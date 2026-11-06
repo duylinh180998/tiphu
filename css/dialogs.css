@@ -66,6 +66,8 @@
 .deed-table tr.lm td, .tt-table tr.lm td { color: #fde68a; }
 .deed-note { padding: 8px 12px; font-size: 12.5px; font-weight: 700; background: linear-gradient(135deg, rgba(236, 72, 153, .3), rgba(245, 158, 11, .3)); }
 .deed-infl { background: linear-gradient(135deg, rgba(239, 68, 68, .3), rgba(249, 115, 22, .22)); }
+.deed-mono { background: linear-gradient(135deg, rgba(34, 197, 94, .35), rgba(14, 165, 233, .3)); }
+.deed-tip { font-weight: 600; color: #c7d2fe; background: rgba(255, 255, 255, .05); }
 .gdots { display: inline-flex; gap: 4px; }
 .gdot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .8); }
 

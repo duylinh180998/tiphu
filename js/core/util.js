@@ -67,10 +67,3 @@ export function sanitizeHTML(html) {
   walk(tpl.content);
   return tpl.innerHTML;
 }
-
-/** Làm sáng/tối một màu hex theo hệ số (dùng cho mặt khối 3D) */
-export function shade(hex, f) {
-  const n = parseInt(String(hex).replace('#', ''), 16);
-  const ch = (v) => Math.max(0, Math.min(255, Math.round(v * f)));
-  return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
-}

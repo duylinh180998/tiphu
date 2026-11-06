@@ -1,5 +1,5 @@
 /**
- * Hộp thoại: mua đất, nâng cấp, mua lại, khu nghỉ dưỡng, thẻ Cơ Hội, bán tài sản,
+ * Hộp thoại: mua đất, nâng cấp, mua đứt, khu nghỉ dưỡng, thẻ Cơ Hội, bán tài sản,
  * phá sản, thông tin người chơi, kết thúc ván, nhật ký, luật chơi.
  */
 import { humanWait } from '../core/session.js';
@@ -9,10 +9,10 @@ import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS } from '../config.
 import { TILES, GROUPS, CARD_BY_ID } from '../data/board.js';
 import {
   P, isBot, ownedBy, netWorth, completedGroups, resortCount, propValue, sellValue, liquidation, rentOf, criticalTiles,
-  inflationPct,
+  inflationPct, hasMonopoly, isOutage,
 } from '../game/rules.js';
 import { AI } from '../game/ai.js';
-import { pn, tn } from '../game/text.js';
+import { pn } from '../game/text.js';
 import { dom, el } from './dom.js';
 import { beginPrompt } from './prompt.js';
 import { groupDots } from './select.js';
@@ -76,6 +76,9 @@ export function deedHTML(i) {
     .map((L) => `<tr class="${owned && pr.level === L ? 'cur' : ''}${L === 4 ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td><b>${fmtFull(t.eco.rents[L])}</b></td></tr>`)
     .join('');
   let notes = store.state.festival.tile === i ? `<div class="deed-note">🎉 Đang tổ chức Lễ Hội — tiền thuê x${store.state.festival.mult}</div>` : '';
+  if (hasMonopoly(i)) notes += '<div class="deed-note deed-mono">🎨 Chủ sở hữu trọn nhóm màu — tiền thuê x2</div>';
+  else notes += '<div class="deed-note deed-tip">🎨 Sở hữu trọn nhóm màu: tiền thuê cả nhóm x2</div>';
+  if (isOutage(i)) notes += `<div class="deed-note deed-infl">🔌 Đang mất điện — không thu tiền thuê (còn ${pr.outage} vòng)</div>`;
   const pct = inflationPct();
   if (pct > 0) notes += `<div class="deed-note deed-infl">📈 Lạm phát: tiền thuê thực tế +${pct}% so với bảng</div>`;
   return `<div class="deed" style="--g:${g.color}">
@@ -88,7 +91,7 @@ export function deedHTML(i) {
 export function resortDeedHTML(i) {
   const pr = store.state.props[i];
   const cnt = pr.owner != null ? resortCount(pr.owner) : 0;
-  const rows = [1, 2, 3, 4].map((n) => `<tr class="${pr.owner != null && cnt === n ? 'cur' : ''}"><td>🏖️ Sở hữu ${n} khu</td><td><b>${fmtFull(RESORT_RENTS[n])}</b></td></tr>`).join('');
+  const rows = [1, 2, 3, 4].map((n) => `<tr class="${pr.owner != null && cnt === n ? 'cur' : ''}"><td>🏖️ Sở hữu ${n} khu</td><td><b>${n === 4 ? "🏆 Thắng ngay" : fmtFull(RESORT_RENTS[n])}</b></td></tr>`).join('');
   return `<div class="deed deed-resort">
     <div class="deed-head"><div class="deed-group">Khu Nghỉ Dưỡng</div><div class="deed-name">🏖️ ${esc(TILES[i].name)}</div></div>
     <table class="deed-table"><thead><tr><th>Số khu cùng chủ</th><th>Tiền thuê</th></tr></thead><tbody>${rows}</tbody></table>
@@ -98,14 +101,14 @@ export function resortDeedHTML(i) {
 const winNote = (p, i) => (criticalTiles(p.id).has(i) ? '<div class="win-note">🏆 Sở hữu ô này bạn sẽ <b>CHIẾN THẮNG</b> ngay lập tức!</div>' : '');
 
 // ---------- Hộp thoại quyết định ----------
-export function purchaseDialog(p, i, options) {
+export function purchaseDialog(p, i, options, firstLap = false) {
   const t = TILES[i];
   return openModal({
     prompt: true,
     icon: '🏗️',
     title: `Mua đất ${esc(t.name)}`,
     sub: `${esc(GROUPS[t.group].name)} · Tiền mặt: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${winNote(p, i)}<p class="hint">Lần mua đầu được xây tối đa đến Nhà cấp 3. Biểu Tượng 🗼 cần dừng lại đây thêm lần nữa.</p>`,
+    html: `${deedHTML(i)}${winNote(p, i)}<p class="hint">${firstLap ? 'Bạn chưa đi qua Bắt Đầu lần nào nên chỉ được mua tới 🏢 Tòa nhà. ' : 'Được mua thẳng lên 🏨 Khách sạn. '}Biểu Tượng 🗼 cần có Khách sạn rồi dừng lại đây lần nữa, dừng ở ô Bắt Đầu, hoặc mua đứt.</p>${p.coupon > 0 ? '<p class="hint">🏷️ Giá đã giảm 50% nhờ thẻ Giảm Giá.</p>' : ''}`,
     stack: true,
     buttons: [
       ...options.map((o, k) => ({
@@ -127,7 +130,7 @@ export function upgradeDialog(p, i, options, title) {
     icon: lm ? '🗼' : '🔨',
     title: `${esc(title)}: ${esc(t.name)}`,
     sub: `Hiện tại: ${LEVEL_ICONS[store.state.props[i].level]} ${LEVEL_NAMES[store.state.props[i].level]} · Tiền mặt: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${lm ? '<p class="hint">🗼 Biểu Tượng tăng mạnh tiền thuê và <b>không thể bị mua lại</b>.</p>' : ''}`,
+    html: `${deedHTML(i)}${lm ? '<p class="hint">🗼 Biểu Tượng tăng mạnh tiền thuê và <b>không thể bị mua đứt</b>.</p>' : ''}`,
     stack: true,
     buttons: [
       ...options.map((o) => ({
@@ -147,12 +150,12 @@ export function buyoutDialog(p, i, cost) {
   return openModal({
     prompt: true,
     icon: '💥',
-    title: `Mua lại ${esc(t.name)}?`,
+    title: `Mua đứt ${esc(t.name)}?`,
     sub: `Chủ hiện tại: ${pn(owner)} · Tiền mặt của bạn: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${winNote(p, i)}<p>Trả gấp đôi giá trị hiện tại (<b>${fmtFull(cost)}</b>) cho ${pn(owner)} để sở hữu ngay thành phố này.</p><p class="hint">Sau khi mua lại bạn có thể nâng cấp tiếp (tối đa Nhà cấp 3).</p>`,
+    html: `${deedHTML(i)}${winNote(p, i)}<p>Trả gấp đôi giá trị hiện tại (<b>${fmtFull(cost)}</b>${p.coupon > 0 ? ', đã giảm 50%' : ''}) cho ${pn(owner)} để sở hữu ngay thành phố này.</p><p class="hint">Sau khi mua đứt bạn được nâng cấp tiếp ngay; nếu đang là Khách sạn thì lên thẳng được Biểu Tượng.</p>`,
     buttons: [
       { label: 'Thôi', value: false, style: 'ghost' },
-      { label: `💥 Mua lại ${fmtFull(cost)}`, value: true, style: 'primary' },
+      { label: `💥 Mua đứt ${fmtFull(cost)}`, value: true, style: 'primary' },
     ],
   });
 }
@@ -167,19 +170,6 @@ export function resortDialog(p, i) {
     buttons: [
       { label: 'Bỏ qua', value: false, style: 'ghost' },
       { label: `🏖️ Mua ${fmtFull(RESORT_PRICE)}`, value: true, style: 'primary' },
-    ],
-  });
-}
-
-export function shieldDialog(p, d) {
-  return openModal({
-    prompt: true,
-    icon: '🛡️',
-    title: 'Dùng Thẻ Miễn Thuê?',
-    html: `<p>Bạn sắp phải trả <b>${fmtFull(d.rent)}</b> cho ${pn(P(d.owner))} tại ${tn(d.i)}.</p><p>Dùng 1 Thẻ Miễn Thuê (còn ${p.freeRent}) để không phải trả lần này?</p>`,
-    buttons: [
-      { label: 'Trả tiền', value: false, style: 'ghost' },
-      { label: '🛡️ Dùng thẻ', value: true, style: 'green', hotkey: true },
     ],
   });
 }
@@ -310,8 +300,9 @@ export function showPlayerInfo(pid) {
     })
     .join('');
   const cards = [];
-  if (p.freeRent) cards.push(`🛡️ Thẻ Miễn Thuê x${p.freeRent}`);
-  if (p.escape) cards.push(`🛶 Thuyền Cứu Hộ x${p.escape}`);
+  if (p.parity) cards.push(`🎯 Chẵn/Lẻ còn ${p.parity} lần`);
+  if (p.coupon) cards.push(`🏷️ Giảm Giá 50% x${p.coupon}`);
+  if (p.escape) cards.push(`🛶 Thoát Đảo Hoang x${p.escape}`);
   const type = isBot(p) ? '🤖 Máy' : p.type === 'remote' ? '🌐 Trực tuyến' : '👤 Người chơi';
   openModal({
     icon: esc(p.avatar),
@@ -367,44 +358,50 @@ export function logModal() {
 
 const RULES_HTML = `
   <div class="rules">
-    <h4>🎯 4 cách chiến thắng</h4>
+    <h4>🎯 5 cách chiến thắng</h4>
     <ul>
       <li>🏆 <b>Người trụ lại cuối cùng</b> — mọi đối thủ đều phá sản.</li>
       <li>🎨 <b>Độc quyền 3 màu</b> — sở hữu trọn vẹn 3 nhóm màu thành phố bất kỳ.</li>
       <li>🛣️ <b>Độc quyền 1 cạnh</b> — sở hữu toàn bộ thành phố và khu nghỉ dưỡng trên cùng 1 cạnh bàn cờ.</li>
       <li>🏖️ <b>Độc quyền du lịch</b> — sở hữu cả 4 Khu Nghỉ Dưỡng.</li>
+      <li>⏱️ <b>Hết 30 vòng</b> — người có tổng tài sản (tiền mặt + giá trị bất động sản) lớn nhất thắng.</li>
     </ul>
     <h4>🎲 Lượt chơi</h4>
     <ul>
-      <li>Lắc 2 xúc xắc rồi đi theo chiều kim đồng hồ. Đổ <b>đôi</b> được lắc thêm lượt.</li>
-      <li>Đổ đôi <b>3 lần liên tiếp</b> → bị đưa thẳng ra Đảo Hoang.</li>
+      <li>Lắc 2 xúc xắc rồi đi theo chiều kim đồng hồ. Đổ <b>đôi</b> được lắc thêm lượt; đôi <b>3 lần liên tiếp</b> → đưa thẳng ra Đảo Hoang.</li>
+      <li>🎯 <b>Chẵn/Lẻ</b>: mỗi người có 3 lần chọn trước khi lắc để tổng xúc xắc chắc chắn là số chẵn hoặc số lẻ.</li>
     </ul>
     <h4>🏙️ Thành phố — 5 cấp</h4>
     <ul>
-      <li>Cấp 0: đất trống (chưa có chủ). Cấp 1–3: 🏠 🏘️ 🏢. Cấp 4: 🗼 <b>Biểu Tượng</b>.</li>
-      <li>Khi mua lần đầu hoặc dừng lại thành phố của mình: xây tối đa đến <b>Nhà cấp 3</b>.</li>
-      <li>Biểu Tượng chỉ xây được khi đã có Nhà cấp 3 và <b>dừng lại ô đó lần nữa</b>.</li>
+      <li>Đất trống → 🏠 Nhà nhỏ → 🏢 Tòa nhà → 🏨 Khách sạn → 🗼 <b>Biểu Tượng</b>.</li>
+      <li>Chưa đi qua Bắt Đầu lần nào: mua đất tối đa tới <b>Tòa nhà</b>. Từ vòng 2 mua thẳng lên được <b>Khách sạn</b>.</li>
+      <li>Biểu Tượng: thành phố phải là Khách sạn, rồi <b>dừng lại ô đó lần nữa</b>, <b>dừng ở ô Bắt Đầu</b>, hoặc <b>mua đứt</b> một Khách sạn rồi nâng ngay.</li>
+      <li>🎨 Sở hữu trọn nhóm màu: tiền thuê của cả nhóm <b>x2</b> (cộng dồn với Lễ Hội).</li>
     </ul>
-    <h4>💥 Mua lại</h4>
+    <h4>💥 Mua đứt</h4>
     <ul>
-      <li>Dừng ở thành phố đối thủ (cấp 1–3): trả tiền thuê, sau đó được quyền trả <b>gấp đôi giá trị hiện tại</b> để mua đứt.</li>
-      <li>Thành phố đã là <b>Biểu Tượng</b> và khu nghỉ dưỡng <b>không thể</b> bị mua lại.</li>
+      <li>Dừng ở thành phố đối thủ: trả tiền thuê, sau đó được quyền trả <b>gấp đôi giá trị hiện tại</b> để mua đứt rồi nâng cấp tiếp.</li>
+      <li>Biểu Tượng và khu nghỉ dưỡng <b>không thể</b> bị mua đứt.</li>
     </ul>
     <h4>⭐ Ô đặc biệt</h4>
     <ul>
-      <li>🏁 <b>Bắt Đầu</b>: đi qua nhận $300K; dừng đúng ô được chọn nâng cấp 1 thành phố.</li>
-      <li>🏝️ <b>Đảo Hoang</b>: kẹt 3 lượt. Thoát bằng đổ đôi, trả $200K hoặc thẻ Thuyền Cứu Hộ.</li>
-      <li>🎉 <b>Lễ Hội Thế Giới</b>: chọn 1 thành phố của mình, tiền thuê x2 (các lần sau x3, x4). Mỗi lúc chỉ 1 thành phố tổ chức.</li>
+      <li>🏁 <b>Bắt Đầu</b>: đi qua nhận $300K; dừng đúng ô được nâng 1 thành phố thêm 1 cấp (kể cả lên Biểu Tượng).</li>
+      <li>🏝️ <b>Đảo Hoang</b>: kẹt 3 lượt. Thoát bằng đổ đôi (đi luôn, không thêm lượt) hoặc trả $200K; thẻ Thoát Đảo tự dùng. Hết 3 lượt thì lượt sau tự đi.</li>
+      <li>🎉 <b>Lễ Hội Thế Giới</b>: chọn 1 thành phố của mình, tiền thuê x2, các lần sau x3, x4, x5. Mỗi lúc chỉ 1 thành phố tổ chức.</li>
       <li>✈️ <b>Chuyến Bay Thế Giới</b>: lượt sau trả $50K để bay tới bất kỳ ô nào.</li>
-      <li>🏖️ <b>Khu Nghỉ Dưỡng</b> (4 ô): thuê $50K / $100K / $200K / $400K theo số khu sở hữu.</li>
-      <li>🎁 <b>Cơ Hội</b>: rút thẻ ngẫu nhiên. 💸 <b>Thuế</b>: nộp 10% tiền mặt.</li>
+      <li>🏖️ <b>Khu Nghỉ Dưỡng</b> (4 ô): thuê $50K / $100K / $200K theo số khu sở hữu; đủ 4 khu là thắng.</li>
+      <li>💸 <b>Thuế</b>: nộp 10% tổng tài sản (tiền mặt + bất động sản).</li>
     </ul>
-    <h4>📈 Lạm phát</h4>
-    <ul><li>Từ <b>vòng 41</b>, mọi tiền thuê tăng thêm <b>5% mỗi vòng</b> — giúp ván đấu luôn đi tới hồi kết.</li></ul>
+    <h4>🎁 Thẻ Cơ Hội</h4>
+    <ul>
+      <li>🌋 Động Đất (phá 1 cấp công trình của đối thủ) · 🔌 Mất Điện (1 thành phố không thu thuê 3 vòng) · 📜 Cưỡng Chế Bán.</li>
+      <li>🏷️ Giảm Giá 50% · 🛶 Thoát Đảo Hoang · 🎉 Vé Lễ Hội · 🎫 Vé Máy Bay · 🏁 Về Bắt Đầu · 🌊 Đắm Tàu.</li>
+    </ul>
     <h4>🆘 Phá sản</h4>
     <ul>
-      <li>Không đủ tiền trả nợ: buộc bán bớt tài sản cho ngân hàng (nhận lại 50% giá trị) cho tới khi đủ.</li>
+      <li>Không đủ tiền trả nợ: buộc bán bớt tài sản cho ngân hàng (nhận lại 50% số tiền đã đầu tư) cho tới khi đủ.</li>
       <li>Bán hết vẫn không đủ → <b>phá sản</b>, toàn bộ tiền còn lại thuộc về chủ nợ.</li>
+      <li>📈 Ván không giới hạn vòng: từ vòng 41 tiền thuê tăng thêm 5% mỗi vòng.</li>
     </ul>
     <h4>🌐 Chơi trực tuyến</h4>
     <ul>
@@ -412,8 +409,6 @@ const RULES_HTML = `
       <li>Mỗi quyết định có <b>45 giây</b>; hết giờ hệ thống tự chọn phương án an toàn.</li>
       <li>Người mất kết nối được chờ 20 giây, sau đó máy chơi thay cho tới khi họ vào lại.</li>
     </ul>
-    <h4>💾 Lưu ván</h4>
-    <ul><li>Ván chơi tự động lưu vào trình duyệt ở đầu mỗi lượt lắc. Mở lại trang để chơi tiếp.</li></ul>
   </div>`;
 
 export function rulesModal() {
