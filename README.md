@@ -40,7 +40,11 @@ Cách hoạt động:
 - Người **mất kết nối** được chờ **20 giây**, sau đó máy tạm chơi thay; mở lại trang và bấm **Vào lại** trên menu để giành lại ghế.
 - Nếu **chủ phòng tải lại trang**, ván vẫn được lưu: chọn **Mở lại phòng** để mở lại với mã cũ, người chơi khác tự kết nối lại.
 - Gửi **biểu cảm** 👍 😂 😱 😡 🎉 🙏 bằng nút 😀 trên thanh công cụ.
-- Một số mạng công ty/trường học chặn kết nối ngang hàng; khi đó hãy thử mạng khác (ví dụ 4G).
+- Hai máy **cùng mạng Wi-Fi** thường nối thẳng được ngay. Hai máy **ở hai mạng khác nhau** (khác nhà, 4G, mạng công ty/trường học) thường cần **máy chủ chuyển tiếp TURN**. PeerJS đã ngừng cung cấp TURN miễn phí, nên cần tự cấu hình một lần:
+  1. Tạo tài khoản miễn phí tại [metered.ca — Open Relay](https://www.metered.ca/tools/openrelay/), tạo app và lấy **API key**.
+  2. Mở `js/config.js`, điền `TURN_CREDENTIALS_URL = 'https://<ten-app>.metered.live/api/v1/turn/credentials?apiKey=<API_KEY>'` (hoặc điền máy chủ TURN riêng vào `TURN_SERVERS`), rồi push lên `main`.
+  3. Lưu ý: key này nằm công khai trong mã trang web, người khác có thể dùng ké hạn mức miễn phí của bạn.
+- Khi không nối được, trò chơi sẽ báo rõ lỗi: không tìm thấy phòng (sai mã / phòng đã đóng), không kết nối được máy chủ tín hiệu, hoặc tìm thấy phòng nhưng không nối thẳng được (cần TURN).
 - Tùy chọn nâng cao: dùng máy chủ tín hiệu riêng (gói npm [`peer`](https://www.npmjs.com/package/peer)) bằng tham số URL, ví dụ `?peer=may-chu-cua-ban.vn:9000&peerpath=/myapp&peersecure=1`.
 
 ## 🗺️ Bàn cờ 32 ô

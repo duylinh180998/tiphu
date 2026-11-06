@@ -71,6 +71,23 @@ export const ROOM_PREFIX = 'cotyphu-v1-';
 export const ROOM_CODE_LENGTH = 6;
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const PEERJS_URL = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js';
+/** STUN công khai: giúp 2 máy tìm địa chỉ của nhau để nối thẳng (miễn phí, không cần tài khoản) */
+export const STUN_SERVERS = [
+  'stun:stun.l.google.com:19302',
+  'stun:stun1.l.google.com:19302',
+  'stun:stun2.l.google.com:19302',
+  'stun:stun.cloudflare.com:3478',
+];
+/**
+ * TURN (máy chủ chuyển tiếp): cần khi 2 máy ở 2 mạng khác nhau không nối thẳng được
+ * (thường gặp với 4G, mạng công ty/trường học). PeerJS đã ngừng TURN miễn phí nên phải tự cấu hình:
+ * - Cách 1: tạo tài khoản miễn phí "Open Relay" tại metered.ca, dán đường link lấy thông tin TURN
+ *   dạng 'https://<ten-app>.metered.live/api/v1/turn/credentials?apiKey=<API_KEY>' vào TURN_CREDENTIALS_URL.
+ * - Cách 2: điền trực tiếp máy chủ TURN vào TURN_SERVERS,
+ *   ví dụ { urls: 'turn:may-chu.vn:3478', username: 'ten', credential: 'mat-khau' }.
+ */
+export const TURN_CREDENTIALS_URL = '';
+export const TURN_SERVERS = [];
 export const DECISION_TIMEOUT_MS = 45000; // thời gian suy nghĩ mỗi quyết định khi chơi trực tuyến
 export const SELL_TIMEOUT_MS = 75000;
 export const DISCONNECT_GRACE_MS = 20000; // chờ người mất kết nối trước khi máy chơi thay

@@ -3,7 +3,9 @@
  * Máy chủ tín hiệu mặc định là PeerJS Cloud; có thể dùng máy chủ riêng qua tham số URL:
  *   ?peer=may-chu.vn:9000&peerpath=/myapp&peersecure=1
  */
-import { PEERJS_URL, ROOM_PREFIX, ROOM_CODE_LENGTH, ROOM_CODE_ALPHABET } from '../config.js';
+import {
+  PEERJS_URL, ROOM_PREFIX, ROOM_CODE_LENGTH, ROOM_CODE_ALPHABET, STUN_SERVERS, TURN_CREDENTIALS_URL, TURN_SERVERS,
+} from '../config.js';
 import { randomCode } from '../core/util.js';
 
 let loading = null;
@@ -26,9 +28,39 @@ export function loadPeerJS() {
   return loading;
 }
 
-export function peerOptions() {
+/** Có cấu hình máy chủ chuyển tiếp TURN hay không */
+export const hasTurn = () => TURN_SERVERS.length > 0 || !!TURN_CREDENTIALS_URL;
+
+let turnFetch = null;
+
+/** Lấy thông tin TURN từ dịch vụ (ví dụ Metered Open Relay); lỗi thì bỏ qua, lần sau thử lại */
+function fetchTurnServers() {
+  if (!TURN_CREDENTIALS_URL) return Promise.resolve([]);
+  if (!turnFetch) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    turnFetch = fetch(TURN_CREDENTIALS_URL, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => (Array.isArray(list) ? list.filter((x) => x && x.urls) : []))
+      .catch((e) => {
+        console.warn('[peer] Không lấy được thông tin TURN', e);
+        turnFetch = null;
+        return [];
+      })
+      .finally(() => clearTimeout(timer));
+  }
+  return turnFetch;
+}
+
+/** Danh sách ICE: STUN công khai + TURN đã cấu hình (thay cho TURN miễn phí của PeerJS đã ngừng hoạt động) */
+async function iceServers() {
+  const stun = STUN_SERVERS.map((urls) => ({ urls }));
+  return [...stun, ...TURN_SERVERS, ...(await fetchTurnServers())];
+}
+
+export async function peerOptions() {
   const q = new URLSearchParams(window.location.search);
-  const opt = { debug: 1 };
+  const opt = { debug: 1, config: { iceServers: await iceServers() } };
   const host = q.get('peer');
   if (host) {
     const [h, port] = host.split(':');
@@ -54,10 +86,11 @@ const errMessage = (err) => {
 };
 
 /** Mở một Peer (id cố định cho chủ phòng, ngẫu nhiên cho người vào phòng) */
-export function openPeer(id) {
+export async function openPeer(id) {
+  const options = await peerOptions();
   return new Promise((resolve, reject) => {
     const Peer = window.Peer;
-    const peer = id ? new Peer(id, peerOptions()) : new Peer(peerOptions());
+    const peer = id ? new Peer(id, options) : new Peer(options);
     let done = false;
     const finish = (err) => {
       if (done) return;
@@ -126,10 +159,12 @@ export function connectTo(peer, code) {
     const onPeerErr = (err) => {
       if (err && (err.type === 'peer-unavailable' || err.type === 'network' || err.type === 'server-error')) finish(err);
     };
-    const timer = setTimeout(
-      () => finish({ type: 'timeout', message: 'Hết thời gian kết nối tới phòng. Mạng của bạn có thể chặn kết nối ngang hàng (WebRTC).' }),
-      15000
-    );
+    const timer = setTimeout(() => {
+      const message = hasTurn()
+        ? 'Hết thời gian kết nối tới phòng. Mạng của bạn có thể chặn kết nối ngang hàng (WebRTC) — hãy thử mạng khác.'
+        : 'Đã tìm thấy phòng nhưng không nối thẳng được tới máy chủ phòng (hai máy ở hai mạng khác nhau). Trò chơi cần máy chủ chuyển tiếp TURN — xem mục "Chơi trực tuyến" trong README.';
+      finish({ type: 'timeout', message });
+    }, 20000);
     conn.on('open', () => finish(null));
     conn.on('error', (err) => finish(err));
     peer.on('error', onPeerErr);
