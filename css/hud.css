@@ -41,7 +41,7 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-12deg);
-  font-family: "Baloo 2", sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 24px;
   letter-spacing: .08em;
@@ -74,7 +74,7 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
 .pc-type { font-size: 11px; color: var(--muted); }
 .pc-turn { opacity: 0; color: var(--pc); font-size: 15px; transition: opacity .3s; }
 .pcard.active .pc-turn { opacity: 1; animation: blink 1s steps(2) infinite; }
-.pc-money { font-family: "Baloo 2", "Be Vietnam Pro", sans-serif; font-weight: 800; font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pc-money { font-family: var(--font-display); font-weight: 800; font-size: 25px; line-height: 1; font-variant-numeric: tabular-nums; }
 .pc-money.up { animation: moneyUp .6s ease; }
 .pc-money.down { animation: moneyDown .6s ease; }
 .pc-sub { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--muted); white-space: nowrap; }
@@ -84,7 +84,7 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
   right: 12px;
   top: 40px;
   z-index: 5;
-  font-family: "Baloo 2", sans-serif;
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 17px;
   pointer-events: none;
@@ -151,7 +151,7 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
 }
 .stage-status:empty { display: none; }
 .stage-status .who { font-size: 1.15em; }
-.stage-status .sum { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 1.35em; color: var(--gold); }
+.stage-status .sum { font-family: var(--font-display); font-weight: 800; font-size: 1.35em; color: var(--gold); }
 .select-title { font-weight: 700; }
 .dbl-tag {
   display: inline-block;
@@ -192,7 +192,7 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
 }
 .turn-banner.out { animation: bannerOut .35s ease forwards; }
 .tb-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 32px; background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .85), var(--pc) 55%); box-shadow: 0 0 0 3px #fff; }
-.tb-title { font-family: "Baloo 2", "Be Vietnam Pro", sans-serif; font-weight: 800; font-size: 25px; line-height: 1.05; }
+.tb-title { font-family: var(--font-display); font-weight: 800; font-size: 25px; line-height: 1.05; }
 .tb-sub { font-size: 13px; font-weight: 600; opacity: .9; }
 
 /* ---------- Nhật ký ---------- */
