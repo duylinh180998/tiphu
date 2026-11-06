@@ -3,7 +3,7 @@
 Board game kinh doanh 32 ô với **bàn cờ 3D góc nhìn isometric**, chạy **hoàn toàn trên trình duyệt**: mua đất, xây nhà, dựng Biểu Tượng, thâu tóm thành phố của đối thủ và giành độc quyền để trở thành tỷ phú duy nhất.
 
 - **Không backend, không database** — chỉ file tĩnh (HTML + CSS + ES modules), chạy thẳng trên GitHub Pages.
-- **Bàn cờ 3D** dựng bằng CSS 3D transforms trên nền trời sáng: ô có độ dày, công trình bo tròn tô màu chủ sở hữu (Nhà nhỏ → Tòa nhà → Khách sạn → tháp Biểu Tượng mái vòm vàng), bãi biển có cây dừa và dù, quân cờ hình thú tròn trịa có tay chân, xúc xắc 3D lăn trên mặt bàn. Có thể đổi sang **góc nhìn 2D** phẳng (mặc định trên điện thoại dọc).
+- **Bàn cờ 3D** dựng bằng CSS 3D transforms trên nền trời sáng: ô có độ dày, công trình bo tròn tô màu chủ sở hữu (cờ Đất nền → Nhà cấp 1 → Nhà cấp 2 → Khách sạn → tháp Biểu Tượng mái vòm vàng), bãi biển có cây dừa và dù, quân cờ hình thú tròn trịa có tay chân, xúc xắc 3D lăn trên mặt bàn. Có thể đổi sang **góc nhìn 2D** phẳng (mặc định trên điện thoại dọc).
 - **3 cách chơi:** 1 người đấu máy (AI) · **Pass & Play** nhiều người chung một máy · **Chơi trực tuyến tối đa 4 người** (WebRTC ngang hàng, ghế trống có thể để máy chơi).
 - **Tự động lưu ván** vào `localStorage`; tải lại trang là chơi tiếp, kể cả ván trực tuyến (chủ phòng mở lại phòng, mọi người tự kết nối lại).
 - Âm thanh tổng hợp bằng **Web Audio API** (không cần file mp3).
@@ -74,17 +74,20 @@ Mỗi người bắt đầu với **$2M**. Ván đấu mặc định **30 vòng*
 - Lắc 2 xúc xắc rồi đi theo chiều kim đồng hồ. Đổ **đôi** được lắc thêm lượt sau khi xử lý xong ô vừa đến; đổ đôi **3 lần liên tiếp** bị đưa thẳng ra Đảo Hoang (không xử lý ô thứ 3).
 - 🎯 **Chẵn/Lẻ**: mỗi người có **3 lần** chọn trước khi lắc để tổng 2 xúc xắc chắc chắn là số chẵn (2, 4, …, 12) hoặc số lẻ (3, 5, …, 11) — dùng để nhắm ô cần tới hoặc né nhà đối thủ.
 
-### 🏙️ Thành phố — 5 cấp
+### 🏙️ Thành phố — 5 cấp công trình
 | Cấp | Công trình | Chi phí | Tiền thuê |
 |-----|-----------|---------|-----------|
-| 0 | Đất trống (chưa có chủ) | — | — |
-| 1 | 🏠 Nhà nhỏ (gồm đất) | 100% giá gốc | 35% |
-| 2 | 🏢 Tòa nhà | +50% | 90% |
-| 3 | 🏨 Khách sạn | +50% | 175% |
-| 4 | 🗼 **Biểu Tượng** | +100% | 320% |
+| 1 | 🚩 Đất nền | 50% giá gốc | 10% |
+| 2 | 🏠 Nhà cấp 1 | +50% | 35% |
+| 3 | 🏘️ Nhà cấp 2 | +50% | 90% |
+| 4 | 🏨 Khách sạn | +50% | 175% |
+| 5 | 🗼 **Biểu Tượng** | +100% | 320% |
 
-- Khi **chưa đi qua Bắt Đầu lần nào**: mua đất trống tối đa tới **Tòa nhà**. Từ vòng 2 trở đi mua thẳng lên được **Khách sạn**.
-- Dừng lại thành phố của mình: nâng tiếp tới Khách sạn; đang là Khách sạn thì được xây **Biểu Tượng**.
+- 🔒 **Mở khóa theo vòng** (số lần đã đi qua ô Bắt Đầu của từng người):
+  - **Vòng 1** (chưa qua lần nào): chỉ mua được **Đất nền** — đầu ván trên bàn chỉ có đất cắm cờ màu.
+  - **Vòng 2**: mở thêm **Nhà cấp 1** và **Nhà cấp 2**.
+  - **Từ vòng 3**: mở **Khách sạn**; dừng ở đất trống và đủ tiền thì xây một mạch từ Đất nền lên Khách sạn.
+- Dừng lại thành phố của mình: nâng tiếp tới mức đã mở khóa; đang là Khách sạn thì được xây **Biểu Tượng**.
 - **Biểu Tượng** không bao giờ xây ngay khi mới mua đất. Thành phố phải là Khách sạn, sau đó: dừng lại ô đó lần nữa, **dừng đúng ô Bắt Đầu**, hoặc **mua đứt** một Khách sạn của đối thủ rồi nâng ngay.
 - 🎨 **Độc quyền nhóm màu**: sở hữu trọn bộ thành phố cùng màu (2 hoặc 3 ô) → tiền thuê của cả nhóm **x2**.
 - Tiền thuê = thuê theo cấp × độc quyền màu (x2) × Lễ Hội (x2…x5).

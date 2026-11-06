@@ -38,7 +38,7 @@ export function localAsk(p, kind, d) {
     case 'select':
       return selectTile(d.cands, { title: d.title, cancelLabel: d.cancelLabel || null });
     case 'purchase':
-      return purchaseDialog(p, d.i, d.options, d.firstLap);
+      return purchaseDialog(p, d.i, d.options, d.locked || []);
     case 'upgrade':
       return upgradeDialog(p, d.i, d.options, d.title);
     case 'buyout':

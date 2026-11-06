@@ -3,6 +3,7 @@
  */
 import {
   RESORT_PRICE, RESORT_RENTS, SELL_RATE, BUYOUT_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP, MONOPOLY_MULT, COUPON_RATE,
+  BUILD_CAP_BY_LAP,
 } from '../config.js';
 import { TILES, PROP_TILES, CITY_TILES, RESORT_TILES, GROUP_TILES, GROUPS, SIDE_TILES, SIDE_NAMES } from '../data/board.js';
 import { r5 } from '../core/util.js';
@@ -65,6 +66,11 @@ export function rentOf(i) {
   if (TILES[i].type === 'city' && st().festival.tile === i) r *= st().festival.mult;
   return r5(r * inflation());
 }
+
+/** Cấp công trình cao nhất người chơi được xây theo số lần đã qua Bắt Đầu (chưa tính Biểu Tượng) */
+export const buildCap = (p) => BUILD_CAP_BY_LAP[Math.min(p.laps || 0, BUILD_CAP_BY_LAP.length - 1)];
+/** Vòng (theo người chơi) mở khóa cấp L */
+export const unlockLapOf = (L) => BUILD_CAP_BY_LAP.findIndex((cap) => cap >= L) + 1;
 
 /** Giá phải trả khi người chơi đang giữ thẻ Giảm Giá */
 export const discounted = (p, cost) => (p.coupon > 0 ? r5(cost * COUPON_RATE) : cost);

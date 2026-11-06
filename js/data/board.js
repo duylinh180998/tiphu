@@ -2,7 +2,7 @@
  * Dữ liệu bàn cờ 32 ô, nhóm màu và bộ thẻ Cơ Hội.
  * Ô 0 ở góc dưới trái, đi theo chiều kim đồng hồ.
  */
-import { COST_MULT, RENT_MULT } from '../config.js';
+import { COST_MULT, RENT_MULT, LANDMARK } from '../config.js';
 import { r5 } from '../core/util.js';
 
 export const GROUPS = [
@@ -56,7 +56,7 @@ TILES.forEach((t, i) => {
   if (t.type === 'city') {
     const costs = COST_MULT.map((m) => r5(t.price * m));
     const value = [0];
-    for (let L = 1; L <= 4; L++) value[L] = value[L - 1] + costs[L];
+    for (let L = 1; L <= LANDMARK; L++) value[L] = value[L - 1] + costs[L];
     const rents = RENT_MULT.map((m) => r5(t.price * m));
     t.eco = { costs, value, rents };
   }

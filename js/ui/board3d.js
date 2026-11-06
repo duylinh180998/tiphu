@@ -5,7 +5,7 @@
  * - Chế độ 2D: bỏ nghiêng, mặt chữ trở về nằm ngang như bàn cờ phẳng.
  */
 import { TILES, GROUPS, gridPos, isCorner, sideOf } from '../data/board.js';
-import { LEVEL_ICONS, RESORT_PRICE } from '../config.js';
+import { LEVEL_ICONS, RESORT_PRICE, LANDMARK } from '../config.js';
 import { store } from '../core/store.js';
 import { esc, fmt } from '../core/util.js';
 import { rentOf, hasMonopoly, isOutage } from '../game/rules.js';
@@ -26,7 +26,7 @@ function faceHTML(t) {
   const nameCls = t.name.length >= 9 ? 'name long' : 'name';
   switch (t.type) {
     case 'city':
-      return `<div class="tile-face"><div class="band"><span class="lvl"></span><span class="mono-tag" title="Độc quyền nhóm màu: thuê x2">x2</span></div><div class="label"><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div></div></div><div class="lot"></div><div class="fest-flag"></div><div class="out-flag"></div>`;
+      return `<div class="tile-face"><div class="band"><span class="lvl"></span><span class="mono-tag" title="Độc quyền nhóm màu: thuê x2">x2</span></div><div class="label"><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div><div class="tags"></div></div></div><div class="lot"></div>`;
     case 'resort':
       return `<div class="tile-face"><div class="band band-resort"><span class="lvl">🏖️</span></div><div class="label"><div class="beach-ico">🌴⛱️</div><div class="${nameCls}">${esc(t.name)}</div><div class="price"></div></div></div><div class="lot"></div>`;
     case 'chance':
@@ -79,7 +79,7 @@ export function renderTiles() {
     const pr = s ? s.props[i] : null;
     const owner = pr && pr.owner != null ? s.players[pr.owner] : null;
     e.classList.toggle('owned', !!owner);
-    e.classList.toggle('landmark', !!owner && t.type === 'city' && pr.level === 4);
+    e.classList.toggle('landmark', !!owner && t.type === 'city' && pr.level === LANDMARK);
     if (owner) e.style.setProperty('--owner', owner.color);
     else e.style.removeProperty('--owner');
     if (t.type === 'city') e.querySelector('.lvl').textContent = owner ? LEVEL_ICONS[pr.level] : '';
@@ -100,21 +100,16 @@ export function renderTiles() {
     }
     if (t.type === 'city') {
       e.classList.toggle('mono', !!s && hasMonopoly(i));
-      const out = !!s && isOutage(i);
-      e.classList.toggle('outage', out);
-      const oflag = e.querySelector('.out-flag');
-      const olabel = out ? `🔌 ${pr.outage}` : '';
-      if (oflag.dataset.v !== olabel) {
-        oflag.dataset.v = olabel;
-        oflag.innerHTML = out ? billboard(0, 0, olabel, 'bb-out') : '';
-      }
       const fest = !!s && s.festival.tile === i;
+      const out = !!s && isOutage(i);
       e.classList.toggle('festival', fest);
-      const flag = e.querySelector('.fest-flag');
-      const label = fest ? `🎉 x${s.festival.mult}` : '';
-      if (flag.dataset.v !== label) {
-        flag.dataset.v = label;
-        flag.innerHTML = fest ? billboard(0, 0, label, 'bb-fest') : '';
+      e.classList.toggle('outage', out);
+      // Nhãn in phẳng ngay dưới giá thuê của chính ô đó: không bị công trình che, không nhầm ô
+      const tags = (fest ? `<span class="tag tag-fest">🎉 x${s.festival.mult}</span>` : '') + (out ? `<span class="tag tag-out">🔌 ${pr.outage} vòng</span>` : '');
+      const box = e.querySelector('.tags');
+      if (box.dataset.v !== tags) {
+        box.dataset.v = tags;
+        box.innerHTML = tags;
       }
     }
   });

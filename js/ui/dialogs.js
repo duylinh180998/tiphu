@@ -5,7 +5,7 @@
 import { humanWait } from '../core/session.js';
 import { store, S } from '../core/store.js';
 import { esc, fmt, fmtFull } from '../core/util.js';
-import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS } from '../config.js';
+import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS, LANDMARK } from '../config.js';
 import { TILES, GROUPS, CARD_BY_ID } from '../data/board.js';
 import {
   P, isBot, ownedBy, netWorth, completedGroups, resortCount, propValue, sellValue, liquidation, rentOf, criticalTiles,
@@ -72,8 +72,8 @@ export function deedHTML(i) {
   const g = GROUPS[t.group];
   const pr = store.state.props[i];
   const owned = pr.owner != null;
-  const rows = [1, 2, 3, 4]
-    .map((L) => `<tr class="${owned && pr.level === L ? 'cur' : ''}${L === 4 ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td><b>${fmtFull(t.eco.rents[L])}</b></td></tr>`)
+  const rows = [1, 2, 3, 4, 5]
+    .map((L) => `<tr class="${owned && pr.level === L ? 'cur' : ''}${L === LANDMARK ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td><b>${fmtFull(t.eco.rents[L])}</b></td></tr>`)
     .join('');
   let notes = store.state.festival.tile === i ? `<div class="deed-note">🎉 Đang tổ chức Lễ Hội — tiền thuê x${store.state.festival.mult}</div>` : '';
   if (hasMonopoly(i)) notes += '<div class="deed-note deed-mono">🎨 Chủ sở hữu trọn nhóm màu — tiền thuê x2</div>';
@@ -101,14 +101,14 @@ export function resortDeedHTML(i) {
 const winNote = (p, i) => (criticalTiles(p.id).has(i) ? '<div class="win-note">🏆 Sở hữu ô này bạn sẽ <b>CHIẾN THẮNG</b> ngay lập tức!</div>' : '');
 
 // ---------- Hộp thoại quyết định ----------
-export function purchaseDialog(p, i, options, firstLap = false) {
+export function purchaseDialog(p, i, options, locked = []) {
   const t = TILES[i];
   return openModal({
     prompt: true,
     icon: '🏗️',
     title: `Mua đất ${esc(t.name)}`,
     sub: `${esc(GROUPS[t.group].name)} · Tiền mặt: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${winNote(p, i)}<p class="hint">${firstLap ? 'Bạn chưa đi qua Bắt Đầu lần nào nên chỉ được mua tới 🏢 Tòa nhà. ' : 'Được mua thẳng lên 🏨 Khách sạn. '}Biểu Tượng 🗼 cần có Khách sạn rồi dừng lại đây lần nữa, dừng ở ô Bắt Đầu, hoặc mua đứt.</p>${p.coupon > 0 ? '<p class="hint">🏷️ Giá đã giảm 50% nhờ thẻ Giảm Giá.</p>' : ''}`,
+    html: `${deedHTML(i)}${winNote(p, i)}<p class="hint">Công trình mở khóa theo số lần qua Bắt Đầu: vòng 1 chỉ 🚩 Đất nền, vòng 2 tới 🏘️ Nhà cấp 2, từ vòng 3 tới 🏨 Khách sạn. Biểu Tượng 🗼 cần có Khách sạn rồi dừng lại đây lần nữa, dừng ở ô Bắt Đầu, hoặc mua đứt.</p>${p.coupon > 0 ? '<p class="hint">🏷️ Giá đã giảm 50% nhờ thẻ Giảm Giá.</p>' : ''}`,
     stack: true,
     buttons: [
       ...options.map((o, k) => ({
@@ -117,6 +117,12 @@ export function purchaseDialog(p, i, options, firstLap = false) {
         style: k === 0 ? 'blue' : k === 1 ? 'green' : 'primary',
         disabled: o.cost > p.money,
       })),
+      ...locked.map((o) => ({
+        label: `<span>🔒 ${LEVEL_ICONS[o.level]} ${LEVEL_NAMES[o.level]}</span><span class="btn-meta">mở khóa ở vòng ${o.lap}</span>`,
+        value: o.level,
+        style: 'locked',
+        disabled: true,
+      })),
       { label: 'Bỏ qua', value: 0, style: 'ghost' },
     ],
   });
@@ -124,7 +130,7 @@ export function purchaseDialog(p, i, options, firstLap = false) {
 
 export function upgradeDialog(p, i, options, title) {
   const t = TILES[i];
-  const lm = options.some((o) => o.level === 4);
+  const lm = options.some((o) => o.level === LANDMARK);
   return openModal({
     prompt: true,
     icon: lm ? '🗼' : '🔨',
@@ -136,7 +142,7 @@ export function upgradeDialog(p, i, options, title) {
       ...options.map((o) => ({
         label: `<span>${LEVEL_ICONS[o.level]} Lên ${LEVEL_NAMES[o.level]}</span><span class="btn-meta">${fmtFull(o.cost)} · thuê ${fmt(o.rent)}</span>`,
         value: o.level,
-        style: o.level === 4 ? 'gold' : 'green',
+        style: o.level === LANDMARK ? 'gold' : 'green',
         disabled: o.cost > p.money,
       })),
       { label: 'Để sau', value: 0, style: 'ghost' },
@@ -371,10 +377,10 @@ const RULES_HTML = `
       <li>Lắc 2 xúc xắc rồi đi theo chiều kim đồng hồ. Đổ <b>đôi</b> được lắc thêm lượt; đôi <b>3 lần liên tiếp</b> → đưa thẳng ra Đảo Hoang.</li>
       <li>🎯 <b>Chẵn/Lẻ</b>: mỗi người có 3 lần chọn trước khi lắc để tổng xúc xắc chắc chắn là số chẵn hoặc số lẻ.</li>
     </ul>
-    <h4>🏙️ Thành phố — 5 cấp</h4>
+    <h4>🏙️ Thành phố — 5 cấp công trình</h4>
     <ul>
-      <li>Đất trống → 🏠 Nhà nhỏ → 🏢 Tòa nhà → 🏨 Khách sạn → 🗼 <b>Biểu Tượng</b>.</li>
-      <li>Chưa đi qua Bắt Đầu lần nào: mua đất tối đa tới <b>Tòa nhà</b>. Từ vòng 2 mua thẳng lên được <b>Khách sạn</b>.</li>
+      <li>🚩 Đất nền → 🏠 Nhà cấp 1 → 🏘️ Nhà cấp 2 → 🏨 Khách sạn → 🗼 <b>Biểu Tượng</b>.</li>
+      <li>🔒 Mở khóa theo số lần đi qua Bắt Đầu: <b>vòng 1</b> chỉ mua được Đất nền; <b>vòng 2</b> xây tới Nhà cấp 2; <b>từ vòng 3</b> mới xây được Khách sạn (mua đất trống có thể xây một mạch lên Khách sạn).</li>
       <li>Biểu Tượng: thành phố phải là Khách sạn, rồi <b>dừng lại ô đó lần nữa</b>, <b>dừng ở ô Bắt Đầu</b>, hoặc <b>mua đứt</b> một Khách sạn rồi nâng ngay.</li>
       <li>🎨 Sở hữu trọn nhóm màu: tiền thuê của cả nhóm <b>x2</b> (cộng dồn với Lễ Hội).</li>
     </ul>

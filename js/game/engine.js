@@ -5,7 +5,7 @@
 import {
   SAVE_VERSION, TILE_COUNT, START_TILE, ISLAND_TILE, FESTIVAL_TILE, TOUR_TILE, TAX_TILE, START_SALARY, ISLAND_FEE,
   ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP, LEVEL_ICONS,
-  LEVEL_NAMES, MAX_LOG, FIRST_LAP_MAX_LEVEL, PARITY_USES, OUTAGE_ROUNDS,
+  LEVEL_NAMES, MAX_LOG, PARITY_USES, OUTAGE_ROUNDS, HOTEL, LANDMARK,
 } from '../config.js';
 import { TILES, CITY_TILES, CHANCE_DECK, CARD_BY_ID } from '../data/board.js';
 import { store, S, saveGame } from '../core/store.js';
@@ -14,7 +14,7 @@ import { rand, shuffle } from '../core/rng.js';
 import { fmt, fmtFull, esc } from '../core/util.js';
 import {
   P, isBot, alivePlayers, ownedBy, citiesOf, resortCount, sellValue, buyoutCost, rentOf, netWorth, liquidation,
-  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted,
+  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted, buildCap, unlockLapOf,
 } from './rules.js';
 import { ask } from './players.js';
 import { AI } from './ai.js';
@@ -526,16 +526,18 @@ async function onCity(p, i) {
 
 async function offerPurchase(p, i) {
   const t = TILES[i];
-  // Chưa đi qua Bắt Đầu lần nào: chỉ được mua tới Tòa nhà; từ vòng 2 được mua thẳng lên Khách sạn
-  const maxLevel = p.laps > 0 ? 3 : FIRST_LAP_MAX_LEVEL;
+  // Mở khóa theo vòng: vòng 1 chỉ Đất nền, vòng 2 tới Nhà cấp 2, từ vòng 3 tới Khách sạn
+  const maxLevel = buildCap(p);
   const options = [];
   for (let L = 1; L <= maxLevel; L++) options.push({ level: L, cost: discounted(p, t.eco.value[L]), rent: t.eco.rents[L] });
+  const locked = [];
+  for (let L = maxLevel + 1; L <= HOTEL; L++) locked.push({ level: L, lap: unlockLapOf(L) });
   if (p.money < options[0].cost) {
     log(`${pn(p)} không đủ tiền mua ${tn(i)} (${fmtFull(options[0].cost)}).`);
     if (!isBot(p)) view.toast(`Không đủ tiền mua ${esc(t.name)}`, 'bad');
     return;
   }
-  const level = await ask(p, 'purchase', { i, options, firstLap: p.laps === 0 });
+  const level = await ask(p, 'purchase', { i, options, locked });
   if (!level) {
     log(`${pn(p)} bỏ qua ${tn(i)}.`);
     return;
@@ -552,20 +554,28 @@ async function offerPurchase(p, i) {
   checkWin();
 }
 
+/** Cấp cao nhất được nâng lên từ cấp hiện tại: Biểu Tượng chỉ khi đã có Khách sạn, còn lại theo mở khóa vòng */
+const upgradeCap = (p, level) => (level >= HOTEL ? LANDMARK : Math.min(HOTEL, buildCap(p)));
+
 /**
  * Nâng cấp thành phố của chính mình.
- * - Mặc định: dưới Khách sạn được nâng tới Khách sạn; đang là Khách sạn thì được xây Biểu Tượng.
+ * - Mặc định: nâng tới mức đã mở khóa; đang là Khách sạn thì được xây Biểu Tượng.
  * - single: chỉ nâng thêm đúng 1 cấp (đặc quyền khi dừng ở ô Bắt Đầu).
  */
 async function offerUpgrade(p, i, { title = 'Nâng cấp', single = false } = {}) {
   const t = TILES[i];
   const pr = st().props[i];
   if (t.type !== 'city' || pr.owner !== p.id) return;
-  if (pr.level >= 4) {
+  if (pr.level >= LANDMARK) {
     log(`🗼 ${tn(i)} của ${pn(p)} đã là Biểu Tượng.`);
     return;
   }
-  const maxLevel = single ? pr.level + 1 : pr.level < 3 ? 3 : 4;
+  const cap = upgradeCap(p, pr.level);
+  const maxLevel = single ? Math.min(pr.level + 1, cap) : cap;
+  if (maxLevel <= pr.level) {
+    log(`🔒 ${pn(p)} chưa mở khóa cấp công trình tiếp theo tại ${tn(i)} (cần đi qua Bắt Đầu thêm).`);
+    return;
+  }
   const options = [];
   for (let L = pr.level + 1; L <= maxLevel; L++) {
     options.push({ level: L, cost: discounted(p, t.eco.value[L] - t.eco.value[pr.level]), rent: t.eco.rents[L] });
@@ -579,7 +589,7 @@ async function offerUpgrade(p, i, { title = 'Nâng cấp', single = false } = {}
   if (!level) return;
   const cost = spendOnProperty(p, t.eco.value[level] - t.eco.value[pr.level]);
   pr.level = level;
-  if (level === 4) {
+  if (level === LANDMARK) {
     log(`🗼 ${pn(p)} xây BIỂU TƯỢNG tại ${tn(i)} (${fmtFull(cost)}) — không ai có thể mua đứt!`, 'buy');
     view.sound('landmark');
     view.tileFx(i, '🗼', 'build big');
@@ -612,7 +622,7 @@ async function offerBuyout(p, i) {
   const t = TILES[i];
   const pr = st().props[i];
   if (p.bankrupt || t.type !== 'city' || pr.owner == null || pr.owner === p.id) return;
-  if (pr.level >= 4) {
+  if (pr.level >= LANDMARK) {
     log(`🔒 ${tn(i)} là Biểu Tượng — không thể mua đứt.`);
     return;
   }
@@ -673,7 +683,7 @@ async function onResort(p, i) {
 async function onStart(p) {
   const cands = citiesOf(p.id).filter((i) => {
     const L = st().props[i].level;
-    return L < 4 && discounted(p, TILES[i].eco.costs[L + 1]) <= p.money;
+    return L < LANDMARK && L + 1 <= upgradeCap(p, L) && discounted(p, TILES[i].eco.costs[L + 1]) <= p.money;
   });
   if (!cands.length) {
     log(`🏁 ${pn(p)} dừng đúng ô BẮT ĐẦU.`);
@@ -807,10 +817,10 @@ async function applyCard(p, card) {
 async function cardEarthquake(p) {
   const cands = CITY_TILES.filter((i) => {
     const pr = st().props[i];
-    return pr.owner != null && pr.owner !== p.id && pr.level >= 2;
+    return pr.owner != null && pr.owner !== p.id && pr.level >= 2; // Đất nền không còn gì để phá
   });
   if (!cands.length) {
-    log('🌋 Đối thủ chưa có công trình nào từ Tòa nhà trở lên — động đất không gây thiệt hại.');
+    log('🌋 Đối thủ chưa xây nhà trên đất nào — động đất không gây thiệt hại.');
     return;
   }
   const target = await ask(p, 'select', { purpose: 'earthquake', cands, title: '🌋 <b>Động Đất</b>: chọn 1 thành phố của đối thủ để phá hủy 1 cấp công trình' });
@@ -851,7 +861,7 @@ async function cardOutage(p) {
 async function cardEvict(p) {
   const cands = CITY_TILES.filter((i) => {
     const pr = st().props[i];
-    return pr.owner != null && pr.owner !== p.id && pr.level < 4;
+    return pr.owner != null && pr.owner !== p.id && pr.level < LANDMARK;
   });
   if (!cands.length) {
     log('📜 Không có thành phố nào của đối thủ có thể bị cưỡng chế bán.');

@@ -4,7 +4,7 @@
 import { humanWait } from '../core/session.js';
 import { store } from '../core/store.js';
 import { esc, fmtFull } from '../core/util.js';
-import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS } from '../config.js';
+import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS, LANDMARK } from '../config.js';
 import { TILES, GROUPS, GROUP_TILES, SPECIAL_DESC } from '../data/board.js';
 import { rentOf, buyoutCost, sellValue, resortCount, inflationPct, hasMonopoly, isOutage } from '../game/rules.js';
 import { dom } from './dom.js';
@@ -101,8 +101,8 @@ export function tileInfoHTML(i) {
   const owner = pr && pr.owner != null ? s.players[pr.owner] : null;
   if (t.type === 'city') {
     const g = GROUPS[t.group];
-    const rows = [1, 2, 3, 4]
-      .map((L) => `<tr class="${owner && pr.level === L ? 'cur' : ''}${L === 4 ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td>${fmtFull(t.eco.rents[L])}</td></tr>`)
+    const rows = [1, 2, 3, 4, 5]
+      .map((L) => `<tr class="${owner && pr.level === L ? 'cur' : ''}${L === LANDMARK ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td>${fmtFull(t.eco.rents[L])}</td></tr>`)
       .join('');
     let status;
     if (owner) {
@@ -110,7 +110,7 @@ export function tileInfoHTML(i) {
       status = `<div class="tt-owner" style="--pc:${owner.color}">${esc(owner.avatar)} ${esc(owner.name)} · ${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}</div>
         <div class="tt-line">💰 Tiền thuê hiện tại: <b>${fmtFull(rentOf(i))}</b>${fest}${inflTag()}</div>
         ${isOutage(i) ? `<div class="tt-line">🔌 Mất điện — không thu tiền thuê (còn ${pr.outage} vòng)</div>` : ''}
-        <div class="tt-line">${pr.level >= 4 ? '🔒 Biểu Tượng — không thể bị mua đứt' : `💥 Giá mua đứt: <b>${fmtFull(buyoutCost(i))}</b>`}</div>
+        <div class="tt-line">${pr.level >= LANDMARK ? '🔒 Biểu Tượng — không thể bị mua đứt' : `💥 Giá mua đứt: <b>${fmtFull(buyoutCost(i))}</b>`}</div>
         <div class="tt-line">💱 Bán cho ngân hàng: ${fmtFull(sellValue(i))}</div>`;
     } else {
       status = `<div class="tt-line">🏷️ Chưa có chủ — giá từ <b>${fmtFull(t.eco.value[1])}</b></div>`;
