@@ -48,7 +48,7 @@ function thinkingText(p, kind, d) {
     case 'upgrade':
       return `${who} đang tính chuyện nâng cấp ${tn(d.i)}${dots}`;
     case 'buyout':
-      return `${who} đang cân nhắc mua lại ${tn(d.i)}${dots}`;
+      return `${who} đang cân nhắc mua đứt ${tn(d.i)}${dots}`;
     case 'select':
       return `${who} đang lựa chọn${dots}`;
     case 'sell':
@@ -62,7 +62,7 @@ function thinkingText(p, kind, d) {
 export async function botDecide(p, kind, d) {
   const msg = thinkingText(p, kind, d);
   if (msg) hooks.status(msg);
-  if (kind !== 'card' && kind !== 'bankrupt' && kind !== 'shield') await sleep(S().bot);
+  if (kind !== 'card' && kind !== 'bankrupt') await sleep(S().bot);
   return AI.decide(p, kind, d);
 }
 
@@ -72,10 +72,10 @@ export function validate(p, kind, d, v) {
   let ok;
   switch (kind) {
     case 'roll':
-      ok = v === 'roll';
+      ok = v === 'roll' || ((v === 'even' || v === 'odd') && p.parity > 0);
       break;
     case 'island':
-      ok = v === 'roll' || (v === 'pay' && !!d.canPay) || (v === 'card' && p.escape > 0);
+      ok = v === 'roll' || (v === 'pay' && !!d.canPay);
       break;
     case 'tour':
       ok = v === null || (Number.isInteger(v) && d.cands.includes(v));
@@ -86,7 +86,6 @@ export function validate(p, kind, d, v) {
       break;
     case 'buyout':
     case 'resort':
-    case 'shield':
       ok = typeof v === 'boolean';
       break;
     case 'select':

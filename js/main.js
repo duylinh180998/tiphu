@@ -2,7 +2,7 @@
  * CỜ TỶ PHÚ — điểm khởi động.
  * Nối các module: giao diện ⇄ engine ⇄ mạng; điều hướng menu, chơi một máy, chơi trực tuyến.
  */
-import { SPEEDS, SPEED_ORDER, EMOTES } from './config.js';
+import { SPEEDS, SPEED_ORDER, EMOTES, DEFAULT_ROUNDS } from './config.js';
 import { store, saveSettings, loadGame, S } from './core/store.js';
 import { resetSession } from './core/session.js';
 import { onBus } from './core/bus.js';
@@ -114,7 +114,7 @@ async function resumeSaved() {
 // ===================================================================
 async function createRoom(profile) {
   leaveOnlineSilently();
-  await host.createRoom(profile, { startMoney: 2000, maxRounds: 0 });
+  await host.createRoom(profile, { startMoney: 2000, maxRounds: DEFAULT_ROUNDS });
 }
 
 async function joinRoom(code, profile) {

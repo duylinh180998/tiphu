@@ -1,7 +1,7 @@
 /**
  * Các màn hình ngoài ván đấu: menu chính, thiết lập ván một máy, chơi trực tuyến, phòng chờ.
  */
-import { AVATARS, DEFAULT_SLOTS, PLAYER_COLORS, SPEEDS } from '../config.js';
+import { AVATARS, DEFAULT_SLOTS, PLAYER_COLORS, SPEEDS, DEFAULT_ROUNDS } from '../config.js';
 import { store, saveSettings, loadGame, loadNetInfo } from '../core/store.js';
 import { esc } from '../core/util.js';
 import { $, $$, el } from './dom.js';
@@ -46,7 +46,7 @@ export function showMenu() {
 // ===================================================================
 // Thiết lập ván một máy (1 người + máy / Pass & Play / xem máy đấu)
 // ===================================================================
-const setup = { slots: DEFAULT_SLOTS.map((s) => ({ ...s })), startMoney: 2000, maxRounds: 0 };
+const setup = { slots: DEFAULT_SLOTS.map((s) => ({ ...s })), startMoney: 2000, maxRounds: DEFAULT_ROUNDS };
 
 function loadSetup() {
   const s = store.settings.setup;
@@ -58,7 +58,8 @@ function loadSetup() {
     if (AVATARS.includes(slot.avatar)) setup.slots[k].avatar = slot.avatar;
   });
   if ([1500, 2000, 3000].includes(s.startMoney)) setup.startMoney = s.startMoney;
-  if ([0, 20, 30, 50].includes(s.maxRounds)) setup.maxRounds = s.maxRounds;
+  // Lưu dưới khóa 'rounds' (khóa cũ 'maxRounds' mặc định là không giới hạn, nay mặc định 30 vòng)
+  if ([0, 20, 30, 50].includes(s.rounds)) setup.maxRounds = s.rounds;
 }
 
 function nextAvatar(current, usedList) {
@@ -150,7 +151,7 @@ function startLocal() {
   store.settings.setup = {
     slots: setup.slots.map((s) => ({ type: s.type, name: s.name, avatar: s.avatar })),
     startMoney: setup.startMoney,
-    maxRounds: setup.maxRounds,
+    rounds: setup.maxRounds,
   };
   saveSettings();
   actions.startLocal({
@@ -256,7 +257,7 @@ export function renderLobby(info) {
     $(s).disabled = !isHost;
   });
   $('#lobby-money').value = String(options.startMoney || 2000);
-  $('#lobby-rounds').value = String(options.maxRounds || 0);
+  $('#lobby-rounds').value = String(options.maxRounds ?? DEFAULT_ROUNDS);
   const players = seats.filter((s) => s.kind === 'host' || s.kind === 'guest' || s.kind === 'bot').length;
   const waiting = seats.filter((s) => s.kind === 'open').length;
   $('#btn-lobby-start').classList.toggle('hidden', !isHost);

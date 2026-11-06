@@ -6,6 +6,7 @@
  */
 import {
   NET_PROTOCOL, PLAYER_COLORS, AVATARS, BOT_NAMES, DISCONNECT_GRACE_MS, HEARTBEAT_MS, HEARTBEAT_TIMEOUT_MS, EMOTES,
+  DEFAULT_ROUNDS,
 } from '../config.js';
 import { store } from '../core/store.js';
 import { sleep, humanWait, resetSession } from '../core/session.js';
@@ -30,7 +31,7 @@ function newRoom(peer, code) {
     started: false,
     seats: [],
     conns: new Map(),
-    options: { startMoney: 2000, maxRounds: 0 },
+    options: { startMoney: 2000, maxRounds: DEFAULT_ROUNDS },
     promptSeq: 0,
     pending: new Map(),
     pendingSync: false,

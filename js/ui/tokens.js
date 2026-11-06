@@ -19,7 +19,10 @@ export function buildTokens() {
   tokenEls = s.players.map((p) => {
     const t = el('div', 'token');
     t.style.setProperty('--pc', p.color);
-    t.innerHTML = `<div class="tk-shadow"></div><div class="tk-bill"><div class="tk-bob"><div class="tk-pawn"><div class="tk-body"></div><div class="tk-head">${esc(p.avatar)}</div></div></div></div>`;
+    // Nhân vật tròn trịa: đầu to mang gương mặt con vật, thân nhỏ có tay, hai bàn chân; nhún nhảy lệch nhịp nhau
+    t.innerHTML = `<div class="tk-shadow"></div><div class="tk-bill"><div class="tk-bob"><div class="tk-pawn" style="animation-delay:${(-0.6 * p.id).toFixed(1)}s">` +
+      '<div class="tk-feet"><i></i><i></i></div><div class="tk-body"><i class="tk-arm l"></i><i class="tk-arm r"></i></div>' +
+      `<div class="tk-head">${esc(p.avatar)}</div><div class="tk-mark"></div></div></div></div>`;
     dom.tokens.appendChild(t);
     return t;
   });

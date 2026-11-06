@@ -33,12 +33,14 @@ html, body { margin: 0; padding: 0; height: 100%; }
 body {
   font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--ink);
+  /* Nền trời sáng: xanh da trời nhạt, mây trắng mờ, chân trời hồng phấn */
   background:
-    radial-gradient(70vmax 50vmax at 50% 42%, rgba(76, 64, 190, .55), transparent 62%),
-    radial-gradient(50vmax 40vmax at 8% 6%, rgba(124, 58, 237, .32), transparent 60%),
-    radial-gradient(50vmax 36vmax at 94% 92%, rgba(14, 165, 233, .22), transparent 60%),
-    linear-gradient(170deg, var(--bg-0), var(--bg-2) 55%, var(--bg-0));
-  background-color: var(--bg-0);
+    radial-gradient(42vmax 16vmax at 14% 10%, rgba(255, 255, 255, .85), transparent 65%),
+    radial-gradient(36vmax 14vmax at 86% 16%, rgba(255, 255, 255, .7), transparent 65%),
+    radial-gradient(40vmax 14vmax at 70% 88%, rgba(255, 255, 255, .55), transparent 65%),
+    radial-gradient(70vmax 50vmax at 50% 50%, rgba(255, 255, 255, .35), transparent 65%),
+    linear-gradient(180deg, #8ed6ff 0%, #c4ebff 48%, #ffe1f0 100%);
+  background-color: #bfe7ff;
   background-attachment: fixed;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -77,6 +79,7 @@ button { font-family: inherit; }
 .btn-gold { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #2a1700; box-shadow: 0 6px 18px rgba(245, 158, 11, .35), inset 0 -3px 0 rgba(0, 0, 0, .14); }
 .btn-blue { background: linear-gradient(135deg, #3b82f6, #06b6d4); box-shadow: 0 6px 18px rgba(59, 130, 246, .32), inset 0 -3px 0 rgba(0, 0, 0, .16); }
 .btn-green { background: linear-gradient(135deg, #059669, #22c55e); box-shadow: 0 6px 18px rgba(34, 197, 94, .3), inset 0 -3px 0 rgba(0, 0, 0, .16); }
+.btn-parity { padding: .55em 1.05em; font-size: .9em; color: #3b0764; background: linear-gradient(135deg, #f0abfc, #c4b5fd); box-shadow: 0 5px 14px rgba(192, 132, 252, .35), inset 0 -3px 0 rgba(0, 0, 0, .12); }
 .btn-danger { background: linear-gradient(135deg, #dc2626, #9f1239); box-shadow: 0 6px 18px rgba(220, 38, 38, .35), inset 0 -3px 0 rgba(0, 0, 0, .18); }
 .btn-ghost { background: rgba(255, 255, 255, .08); }
 .btn-sm { font-size: 12px; padding: .45em .9em; }
