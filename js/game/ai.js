@@ -2,7 +2,7 @@
  * AI của máy. Mọi quyết định đi qua AI.decide(p, kind, data) với cùng định dạng
  * như hộp thoại của người chơi, nên máy cũng có thể "chơi thay" người mất kết nối.
  */
-import { RESORT_PRICE, ISLAND_FEE, TOUR_FEE, TILE_COUNT, TOUR_TILE, START_SALARY, TAX_RATE } from '../config.js';
+import { RESORT_PRICE, ISLAND_FEE, TOUR_FEE, TILE_COUNT, TOUR_TILE, START_SALARY, TAX_RATE, HOTEL, LANDMARK } from '../config.js';
 import { TILES, PROP_TILES, GROUP_TILES, SIDE_TILES, sideOf } from '../data/board.js';
 import { store } from '../core/store.js';
 import { rand } from '../core/rng.js';
@@ -96,7 +96,7 @@ export const AI = {
     if (!ok.length) return 0;
     let best = ok[ok.length - 1].level;
     const unowned = PROP_TILES.filter((j) => props()[j].owner == null).length;
-    if (unowned > PROP_TILES.length * 0.4 && gainV < 50) best = Math.min(best, p.money > store.state.startMoney ? 2 : 1);
+    if (unowned > PROP_TILES.length * 0.4 && gainV < 50) best = Math.min(best, p.money > store.state.startMoney ? 3 : 2);
     return best;
   },
 
@@ -109,8 +109,8 @@ export const AI = {
 
   upgradeLevel(p, i, opts) {
     const reserve = AI.reserve(p);
-    const lm = opts.find((o) => o.level === 4);
-    if (lm) return p.money - lm.cost >= reserve * 0.55 ? 4 : 0;
+    const lm = opts.find((o) => o.level === LANDMARK);
+    if (lm) return p.money - lm.cost >= reserve * 0.55 ? LANDMARK : 0;
     let best = 0;
     opts.forEach((o) => {
       if (p.money - o.cost >= reserve) best = o.level;
@@ -150,7 +150,7 @@ export const AI = {
     const reserve = AI.reserve(p);
     const money = p.money - TOUR_FEE;
     const myCrit = criticalTiles(p.id);
-    const hasUpgradable = citiesOf(p.id).some((i) => props()[i].level < 3);
+    const hasUpgradable = citiesOf(p.id).some((i) => props()[i].level < LANDMARK);
     let best = null;
     let bestScore = 20;
     for (let j = 0; j < TILE_COUNT; j++) {
@@ -171,8 +171,8 @@ export const AI = {
           }
         } else if (pr.owner === p.id) {
           if (t.type === 'city') {
-            if (pr.level === 3 && t.eco.costs[4] <= cash - reserve * 0.6) s += 70;
-            else if (pr.level < 3 && t.eco.costs[pr.level + 1] <= cash - reserve) s += 25;
+            if (pr.level === HOTEL && t.eco.costs[LANDMARK] <= cash - reserve * 0.6) s += 70;
+            else if (pr.level < HOTEL && t.eco.costs[pr.level + 1] <= cash - reserve) s += 25;
             else s += 5;
           } else {
             s += 5;
@@ -180,7 +180,7 @@ export const AI = {
         } else {
           const rent = rentOf(j);
           s -= rent * 0.5;
-          const canBuyout = t.type === 'city' && pr.level < 4;
+          const canBuyout = t.type === 'city' && pr.level < LANDMARK;
           if (myCrit.has(j) && canBuyout && cash - rent >= buyoutCost(j)) s += 900;
         }
       } else if (t.type === 'start') {
@@ -215,7 +215,7 @@ export const AI = {
       const L = props()[i].level;
       const cost = t.eco.costs[L + 1];
       if (p.money - cost < reserve * 0.8) return;
-      const score = (t.eco.rents[L + 1] - t.eco.rents[L]) / cost + (groupComplete(t.group, p.id) ? 0.5 : 0) + (L === 3 ? 0.6 : 0);
+      const score = (t.eco.rents[L + 1] - t.eco.rents[L]) / cost + (groupComplete(t.group, p.id) ? 0.5 : 0) + (L === HOTEL ? 0.6 : 0);
       if (score > bestScore) {
         bestScore = score;
         best = i;
@@ -227,7 +227,7 @@ export const AI = {
   /** Động Đất: phá công trình đem lại nhiều tiền thuê nhất cho đối thủ; ưu tiên phá Biểu Tượng (mất bảo hộ) */
   earthquakeTarget(p, cands) {
     const leader = alivePlayers().filter((o) => o.id !== p.id).sort((a, b) => netWorth(b) - netWorth(a))[0];
-    const score = (i) => rentOf(i) + (props()[i].level === 4 ? 300 : 0) + (leader && props()[i].owner === leader.id ? 100 : 0);
+    const score = (i) => rentOf(i) + (props()[i].level === LANDMARK ? 300 : 0) + (leader && props()[i].owner === leader.id ? 100 : 0);
     return cands.slice().sort((a, b) => score(b) - score(a))[0];
   },
 
@@ -253,7 +253,7 @@ export const AI = {
         s += 70 * resortCount(p.id);
       } else {
         if (groupComplete(t.group, p.id)) s += 260;
-        if (pr.level === 4) s += 420;
+        if (pr.level === LANDMARK) s += 420;
         if (store.state.festival.tile === i) s += 220;
       }
       return s;
@@ -282,7 +282,7 @@ export const AI = {
         const price = t.type === 'resort' ? RESORT_PRICE : t.eco.value[1];
         return price <= p.money ? 30 + AI.gainOf(j, p.id) + AI.threatOf(j, p.id) : 0;
       }
-      if (pr.owner === p.id) return t.type === 'city' && pr.level < 4 ? 20 : 5;
+      if (pr.owner === p.id) return t.type === 'city' && pr.level < LANDMARK ? 20 : 5;
       const rent = rentOf(j);
       return -(rent > p.money ? rent * 2 : rent);
     }

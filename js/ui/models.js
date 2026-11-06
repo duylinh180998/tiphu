@@ -16,12 +16,14 @@ function buildingSprite(level, color) {
   const c = `style="--hc:${color}"`;
   switch (level) {
     case 1:
-      return `<div class="hs hs-1" ${c}><div class="hs-roof"></div><div class="hs-wall"><i class="hs-win"></i><i class="hs-door"></i></div></div>`;
+      return `<div class="hs hs-flag" ${c}><div class="hs-mound"></div><div class="hs-pole"></div><div class="hs-cloth"></div></div>`;
     case 2:
-      return `<div class="hs hs-2" ${c}><div class="hs-cap"></div><div class="hs-body"><i class="hs-grid"></i><i class="hs-door"></i></div></div>`;
+      return `<div class="hs hs-1" ${c}><div class="hs-roof"></div><div class="hs-wall"><i class="hs-win"></i><i class="hs-door"></i></div></div>`;
     case 3:
-      return `<div class="hs hs-3" ${c}><div class="hs-wing l"></div><div class="hs-wing r"></div><div class="hs-body"><i class="hs-grid"></i><i class="hs-door"></i></div><div class="hs-sign">H</div></div>`;
+      return `<div class="hs hs-2" ${c}><div class="hs-cap"></div><div class="hs-body"><i class="hs-grid"></i><i class="hs-door"></i></div></div>`;
     case 4:
+      return `<div class="hs hs-3" ${c}><div class="hs-wing l"></div><div class="hs-wing r"></div><div class="hs-body"><i class="hs-grid"></i><i class="hs-door"></i></div><div class="hs-sign">H</div></div>`;
+    case 5:
       return `<div class="hs hs-4" ${c}><div class="hs-star">★</div><div class="hs-dome"></div><div class="hs-body"><i class="hs-grid"></i></div><div class="hs-base"></div></div>`;
     default:
       return '';

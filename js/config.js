@@ -5,7 +5,7 @@
 export const SAVE_KEY = 'cotyphu.save.v1';
 export const SETTINGS_KEY = 'cotyphu.settings.v1';
 export const NET_KEY = 'cotyphu.net.v1';
-export const SAVE_VERSION = 2; // đổi khi luật/định dạng ván thay đổi: ván lưu cũ bị bỏ qua
+export const SAVE_VERSION = 3; // đổi khi luật/định dạng ván thay đổi: ván lưu cũ bị bỏ qua
 
 // ---------- Bàn cờ ----------
 export const TILE_COUNT = 32;
@@ -27,7 +27,11 @@ export const SELL_RATE = 0.5;
 export const BUYOUT_RATE = 2;
 export const FESTIVAL_MULTS = [2, 3, 4, 5];
 export const MONOPOLY_MULT = 2; // sở hữu trọn nhóm màu: tiền thuê cả nhóm x2
-export const FIRST_LAP_MAX_LEVEL = 2; // chưa qua Bắt Đầu lần nào: mua đất tối đa tới Tòa nhà
+/**
+ * Mở khóa công trình theo số lần đã qua ô Bắt Đầu:
+ * vòng 1 (chưa qua lần nào) chỉ mua Đất nền; vòng 2 mở tới Nhà cấp 2; từ vòng 3 mở Khách sạn.
+ */
+export const BUILD_CAP_BY_LAP = [1, 3, 4];
 export const PARITY_USES = 3; // số lần chọn Chẵn/Lẻ mỗi ván
 export const OUTAGE_ROUNDS = 3; // thẻ Mất Điện: số vòng thành phố không thu được thuê
 export const COUPON_RATE = 0.5; // thẻ Giảm Giá: trả 50% cho lần mua/xây/mua đứt tiếp theo
@@ -36,12 +40,15 @@ export const INFLATION_START = 40; // từ vòng 41 tiền thuê bắt đầu t�
 export const INFLATION_STEP = 0.05; // +5% mỗi vòng
 export const MAX_LOG = 160;
 
+/** Cấp công trình: 0 chưa có chủ, 1 Đất nền, 2 Nhà cấp 1, 3 Nhà cấp 2, 4 Khách sạn, 5 Biểu Tượng */
+export const HOTEL = 4;
+export const LANDMARK = 5;
 /** Chi phí xây từng cấp và tiền thuê từng cấp, tính theo giá gốc của thành phố */
-export const COST_MULT = [0, 1, 0.5, 0.5, 1];
-export const RENT_MULT = [0, 0.35, 0.9, 1.75, 3.2];
+export const COST_MULT = [0, 0.5, 0.5, 0.5, 0.5, 1];
+export const RENT_MULT = [0, 0.1, 0.35, 0.9, 1.75, 3.2];
 
-export const LEVEL_ICONS = ['', '🏠', '🏢', '🏨', '🗼'];
-export const LEVEL_NAMES = ['Đất trống', 'Nhà nhỏ', 'Tòa nhà', 'Khách sạn', 'Biểu Tượng'];
+export const LEVEL_ICONS = ['', '🚩', '🏠', '🏘️', '🏨', '🗼'];
+export const LEVEL_NAMES = ['Đất trống', 'Đất nền', 'Nhà cấp 1', 'Nhà cấp 2', 'Khách sạn', 'Biểu Tượng'];
 
 // ---------- Người chơi ----------
 export const MAX_PLAYERS = 4;

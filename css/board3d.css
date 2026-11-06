@@ -235,36 +235,18 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .bb-in { position: absolute; left: 0; bottom: 0; transform: translateX(-50%); white-space: nowrap; line-height: 1; }
 .bb-prop { font-size: 78px; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .35)); }
 .bb-sm { font-size: 30px; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
-.bb-fest {
-  font-family: "Baloo 2", "Be Vietnam Pro", sans-serif;
-  font-weight: 800;
-  font-size: 22px;
-  color: #fff;
-  padding: 5px 12px 3px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #ec4899, #f59e0b);
-  box-shadow: 0 6px 16px rgba(236, 72, 153, .6), 0 0 0 3px #fff;
-  animation: festBob 1.6s ease-in-out infinite;
-}
 
 /* ---------- Khu đất đặt công trình 3D (phía xa camera của ô) ---------- */
 .lot { position: absolute; width: 56px; height: 56px; transform-style: preserve-3d; pointer-events: none; }
 .s0 .lot, .s2 .lot { left: 88px; top: 22px; }
 .s1 .lot, .s3 .lot { left: 22px; top: 6px; }
 .view-2d .lot { display: none; }
-.fest-flag, .out-flag { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(64px); pointer-events: none; }
-.out-flag { transform: translateZ(40px); }
-.view-2d .fest-flag { left: 26px; top: 20px; transform: none; }
-.view-2d .out-flag { left: 74px; top: 20px; transform: none; }
-.bb-out {
-  font-weight: 800;
-  font-size: 18px;
-  color: #fff;
-  padding: 4px 10px 3px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #475569, #0f172a);
-  box-shadow: 0 0 0 3px #fde047, 0 6px 14px rgba(0, 0, 0, .35);
-}
+/* Nhãn Lễ Hội / Mất Điện in phẳng dưới giá thuê của ô */
+.tags { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; }
+.tags:empty { display: none; }
+.tag { font-size: 11px; font-weight: 800; line-height: 1; padding: 3px 7px; border-radius: 999px; color: #fff; white-space: nowrap; box-shadow: 0 0 0 2px #fff; }
+.tag-fest { background: linear-gradient(135deg, #ec4899, #f59e0b); }
+.tag-out { background: linear-gradient(135deg, #475569, #0f172a); }
 .tile.outage .tile-face { filter: grayscale(.7) brightness(.82); }
 
 /* Độc quyền nhóm màu: nhãn x2 trên dải màu */
@@ -298,7 +280,13 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .hs-body { background: linear-gradient(90deg, var(--hc), var(--hcl) 45%, var(--hc)); box-shadow: 0 0 0 2px #fff; }
 .hs-grid { left: 6px; right: 6px; top: 8px; bottom: 15px; background: radial-gradient(circle, #e0f2fe 2.6px, transparent 3.1px) 0 0 / 8px 9px; }
 .hs-door { bottom: 0; border-radius: 6px 6px 0 0; background: var(--hcd); }
-/* Nhà nhỏ: mái tròn như cây nấm */
+/* Đất nền: cờ màu chủ sở hữu cắm trên ụ đất */
+.hs-flag { width: 40px; height: 48px; }
+.hs-flag .hs-mound { left: 4px; bottom: 0; width: 32px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 40% 30%, #bef264, #65a30d); box-shadow: 0 0 0 2px #fff; }
+.hs-flag .hs-pole { left: 17px; bottom: 5px; width: 4px; height: 42px; border-radius: 2px; background: linear-gradient(90deg, #e5e7eb, #9ca3af); }
+.hs-flag .hs-cloth { left: 21px; top: 1px; width: 19px; height: 16px; border-radius: 0 6px 6px 0; background: linear-gradient(160deg, var(--hcl), var(--hc) 60%, var(--hcd)); box-shadow: 0 0 0 1.5px #fff; animation: flagWave 1.8s ease-in-out infinite; transform-origin: 0 50%; }
+@keyframes flagWave { 0%, 100% { transform: skewY(0); } 50% { transform: skewY(6deg) scaleX(.92); } }
+/* Nhà cấp 1: mái tròn như cây nấm */
 .hs-1 { width: 50px; height: 46px; }
 .hs-1 .hs-roof { left: 1px; top: 2px; z-index: 1; width: 48px; height: 25px; border-radius: 24px 24px 9px 9px; background: linear-gradient(160deg, var(--hcl), var(--hc) 55%, var(--hcd)); box-shadow: 0 0 0 2px #fff; }
 .hs-1 .hs-wall { left: 7px; bottom: 0; width: 36px; height: 25px; border-radius: 8px 8px 6px 6px; background: linear-gradient(#fff, #e9eef5); box-shadow: inset 0 0 0 2px var(--hcd); }
@@ -338,7 +326,6 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .view-3d .t-resort::after { background: #e5c681; }
 .beach-ico { display: none; font-size: 20px; line-height: 1; }
 .view-2d .beach-ico { display: block; }
-.view-2d .bb-fest { font-size: 18px; padding: 3px 9px 2px; }
 
 /* ---------- Trạng thái chọn ô ---------- */
 /* Chỉ làm tối mặt ô (filter trên phần tử 3D sẽ làm phẳng công trình trên ô) */
@@ -521,6 +508,5 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 @keyframes selectGlow { 0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 14px 3px rgba(255, 255, 255, .6); } 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 28px 8px rgba(251, 191, 36, .8); } }
 @keyframes chosenGlow { 0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 18px 5px rgba(255, 255, 255, .7); } 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 30px 10px rgba(251, 191, 36, .85); } }
 @keyframes landPulse { 0% { box-shadow: inset 0 0 0 0 rgba(255, 255, 255, .9), inset 0 0 0 0 rgba(251, 191, 36, .8); } 100% { box-shadow: inset 0 0 0 40px rgba(255, 255, 255, 0), inset 0 0 0 6px rgba(251, 191, 36, 0); } }
-@keyframes festBob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
 @keyframes fxRise { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 18% { opacity: 1; transform: translateY(-20px) scale(1.15); } 100% { opacity: 0; transform: translateY(-110px) scale(1); } }
 @keyframes fxBig { 0% { opacity: 0; transform: scale(.3) rotate(-18deg); } 25% { opacity: 1; transform: translateY(-30px) scale(1.25) rotate(5deg); } 70% { opacity: 1; transform: translateY(-60px) scale(1.05); } 100% { opacity: 0; transform: translateY(-120px) scale(1); } }

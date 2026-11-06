@@ -198,9 +198,12 @@ function cleanPromptData(kind, d) {
   }
   if ('options' in out) {
     if (!Array.isArray(out.options)) return null;
-    out.options = out.options.filter((o) => o && int(o.level, 1, 4) && Number.isFinite(o.cost) && Number.isFinite(o.rent));
+    out.options = out.options.filter((o) => o && int(o.level, 1, 5) && Number.isFinite(o.cost) && Number.isFinite(o.rent));
   }
-  if (kind === 'select' && !['start', 'festival', 'freeUp', 'sellHouse', 'evict'].includes(out.purpose)) out.purpose = 'start';
+  if ('locked' in out) {
+    out.locked = Array.isArray(out.locked) ? out.locked.filter((o) => o && int(o.level, 1, 5) && int(o.lap, 1, 9)) : [];
+  }
+  if (kind === 'select' && !['start', 'festival', 'earthquake', 'outage', 'evict'].includes(out.purpose)) out.purpose = 'start';
   return out;
 }
 
