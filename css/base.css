@@ -144,5 +144,5 @@ button { font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-  .btn-big { animation: none !important; }
+  .btn-big, .btn-roll, .roll-dice { animation: none !important; }
 }

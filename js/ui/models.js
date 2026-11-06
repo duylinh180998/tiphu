@@ -2,6 +2,7 @@
  * Mô hình trên bàn cờ 3D: công trình, bãi biển và các biển đứng trang trí.
  * Mọi mô hình là "biển đứng" (billboard) luôn quay mặt về camera nên dễ nhìn ở góc nghiêng.
  */
+import { buildingSVG } from './buildings.js';
 
 /** Bảng đứng luôn quay mặt về camera (dùng cho emoji trang trí) */
 export function billboard(x, y, content, cls = '') {
@@ -18,13 +19,10 @@ function buildingSprite(level, color) {
     case 1:
       return `<div class="hs hs-flag" ${c}><div class="hs-mound"></div><div class="hs-pole"></div><div class="hs-cloth"></div></div>`;
     case 2:
-      return `<div class="hs hs-1" ${c}><div class="hs-roof"></div><div class="hs-wall"><i class="hs-win"></i><i class="hs-door"></i></div></div>`;
     case 3:
-      return `<div class="hs hs-2" ${c}><div class="hs-cap"></div><div class="hs-body"><i class="hs-grid"></i><i class="hs-door"></i></div></div>`;
     case 4:
-      return `<div class="hs hs-3" ${c}><div class="hs-wing l"></div><div class="hs-wing r"></div><div class="hs-body"><i class="hs-grid"></i><i class="hs-door"></i></div><div class="hs-sign">H</div></div>`;
     case 5:
-      return `<div class="hs hs-4" ${c}><div class="hs-star">★</div><div class="hs-dome"></div><div class="hs-body"><i class="hs-grid"></i></div><div class="hs-base"></div></div>`;
+      return `<div class="hs hs-bld lv${level}" ${c}>${buildingSVG(level)}</div>`;
     default:
       return '';
   }

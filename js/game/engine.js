@@ -57,6 +57,7 @@ export function createState(cfg) {
     props: TILES.map((t) => (t.type === 'city' || t.type === 'resort' ? { owner: null, level: 0, outage: 0 } : null)),
     festival: { tile: null, mult: 1, editions: 0 },
     current: 0,
+    first: 0, // người đi đầu tiên (bốc thăm khi bắt đầu ván); một vòng kết thúc khi lượt quay lại người này
     round: 1,
     doubles: 0,
     turns: 0,
@@ -84,6 +85,12 @@ export function startNewGame(cfg) {
   const humans = st().players.filter((p) => !isBot(p)).length;
   const mode = cfg.online ? ' (trực tuyến)' : humans >= 2 ? ' (Pass & Play)' : '';
   log(`🎲 Ván đấu bắt đầu với ${st().players.length} người chơi${mode}. Chúc may mắn!`, 'good');
+  // Bốc thăm người đi trước (không phải lúc nào cũng là chủ phòng / người chơi 1)
+  const first = Math.floor(Math.random() * st().players.length);
+  st().first = first;
+  st().current = first;
+  log(`🎯 Bốc thăm: ${pn(st().players[first])} được đi trước!`, 'good');
+  view.toast(`🎯 Bốc thăm: ${esc(st().players[first].avatar)} ${esc(st().players[first].name)} đi trước!`, 'gold', 3200);
   saveGame();
 }
 
@@ -137,7 +144,7 @@ function nextPlayer() {
   let wrapped = false;
   for (let k = 0; k < n; k++) {
     i = (i + 1) % n;
-    if (i === 0) wrapped = true;
+    if (i === (s.first || 0)) wrapped = true;
     if (!s.players[i].bankrupt) break;
   }
   s.current = i;

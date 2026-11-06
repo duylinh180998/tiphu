@@ -21,7 +21,7 @@ function rollStatus(p, d) {
 export function localAsk(p, kind, d) {
   switch (kind) {
     case 'roll': {
-      const buttons = [{ label: '🎲 LẮC XÚC XẮC', value: 'roll', style: 'primary', big: true, hotkey: true }];
+      const buttons = [{ label: '<span class="roll-dice">🎲</span><span>LẮC XÚC XẮC</span>', value: 'roll', style: 'roll', big: true, hotkey: true }];
       if (d.parity > 0) {
         buttons.push({ label: '🎯 Chẵn', value: 'even', style: 'parity' });
         buttons.push({ label: '🎯 Lẻ', value: 'odd', style: 'parity' });
@@ -30,7 +30,7 @@ export function localAsk(p, kind, d) {
       return stageActions({ status: rollStatus(p, d), buttons, hint });
     }
     case 'island': {
-      const buttons = [{ label: '🎲 Đổ tìm đôi', value: 'roll', style: 'primary', hotkey: true }];
+      const buttons = [{ label: '<span class="roll-dice">🎲</span><span>ĐỔ TÌM ĐÔI</span>', value: 'roll', style: 'roll', big: true, hotkey: true }];
       buttons.push({ label: `💵 Trả ${fmt(ISLAND_FEE)} rời đảo`, value: 'pay', style: 'gold', disabled: !d.canPay });
       return stageActions({ status: `🏝️ ${pn(p)} đang kẹt trên Đảo Hoang — còn <b>${d.turns}</b> lượt`, buttons });
     }
