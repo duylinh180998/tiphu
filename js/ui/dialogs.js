@@ -108,7 +108,7 @@ export function purchaseDialog(p, i, options, locked = []) {
     icon: '🏗️',
     title: `Mua đất ${esc(t.name)}`,
     sub: `${esc(GROUPS[t.group].name)} · Tiền mặt: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${winNote(p, i)}<p class="hint">Công trình mở khóa theo số lần qua Bắt Đầu: vòng 1 chỉ 🚩 Đất nền, vòng 2 tới 🏘️ Nhà cấp 2, từ vòng 3 tới 🏨 Khách sạn. Biểu Tượng 🗼 cần có Khách sạn rồi dừng lại đây lần nữa, dừng ở ô Bắt Đầu, hoặc mua đứt.</p>${p.coupon > 0 ? '<p class="hint">🏷️ Giá đã giảm 50% nhờ thẻ Giảm Giá.</p>' : ''}`,
+    html: `${deedHTML(i)}${winNote(p, i)}${locked.length ? `<div class="locked-row">${locked.map((o) => `<span class="lock-chip">🔒 ${LEVEL_ICONS[o.level]} ${LEVEL_NAMES[o.level]} · vòng ${o.lap}</span>`).join('')}</div>` : ''}<p class="hint">Biểu Tượng 🗼: cần có Khách sạn rồi dừng lại đây, dừng ở ô Bắt Đầu hoặc mua đứt.</p>${p.coupon > 0 ? '<p class="hint">🏷️ Giá đã giảm 50% nhờ thẻ Giảm Giá.</p>' : ''}`,
     stack: true,
     buttons: [
       ...options.map((o, k) => ({
@@ -116,12 +116,6 @@ export function purchaseDialog(p, i, options, locked = []) {
         value: o.level,
         style: k === 0 ? 'blue' : k === 1 ? 'green' : 'primary',
         disabled: o.cost > p.money,
-      })),
-      ...locked.map((o) => ({
-        label: `<span>🔒 ${LEVEL_ICONS[o.level]} ${LEVEL_NAMES[o.level]}</span><span class="btn-meta">mở khóa ở vòng ${o.lap}</span>`,
-        value: o.level,
-        style: 'locked',
-        disabled: true,
       })),
       { label: 'Bỏ qua', value: 0, style: 'ghost' },
     ],

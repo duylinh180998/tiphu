@@ -22,7 +22,10 @@
   position: relative;
   width: min(440px, 100%);
   max-height: calc(var(--vh) - 32px);
-  overflow-y: auto;
+  /* Nút hành động luôn hiện ở đáy hộp thoại; chỉ phần nội dung cuộn khi màn hình thấp */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 20px;
   border-radius: 22px;
   background: linear-gradient(160deg, #1f2760, #12163a 70%);
@@ -32,16 +35,20 @@
   user-select: text;
 }
 .modal-card.wide { width: min(640px, 100%); }
-.modal-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.modal-head { flex: none; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .modal-icon { flex: none; font-size: 34px; line-height: 1; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .4)); }
 .modal-title { font-family: var(--font-display); font-weight: 800; font-size: 22px; line-height: 1.1; }
 .modal-sub { margin-top: 3px; font-size: 13px; color: var(--muted); }
-.modal-body { font-size: 14px; line-height: 1.5; color: #dbe3ff; }
+.modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; font-size: 14px; line-height: 1.5; color: #dbe3ff; }
 .modal-body p { margin: .45em 0; }
-.modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.modal-actions { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .modal-actions.stack { flex-direction: column; }
 .modal-actions.stack .btn { width: 100%; justify-content: space-between; border-radius: 14px; padding: .8em 1.1em; }
 .hint { font-size: 12.5px; color: var(--muted); }
+/* Các cấp công trình chưa mở khóa (bảng mua đất) */
+.locked-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.lock-chip { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: #cbd5e1; background: rgba(255, 255, 255, .07); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15); }
+
 .win-note {
   margin: 10px 0;
   padding: 8px 12px;
@@ -197,3 +204,23 @@
 
 @keyframes cardFlip { 0% { transform: perspective(800px) rotateY(-100deg) scale(.8); opacity: 0; } 100% { transform: perspective(800px) rotateY(0) scale(1); opacity: 1; } }
 @keyframes winBounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.04); } }
+
+/* Màn hình thấp (laptop nhỏ, cửa sổ thu nhỏ, điện thoại xoay ngang): thu gọn hộp thoại */
+@media (max-height: 680px) {
+  .modal-backdrop { padding: 8px; }
+  .modal-card { max-height: calc(var(--vh) - 16px); padding: 14px 16px; border-radius: 18px; }
+  .modal-head { margin-bottom: 8px; }
+  .modal-icon { font-size: 26px; }
+  .modal-title { font-size: 18px; }
+  .deed-head { padding: 7px 12px; }
+  .deed-name { font-size: 18px; }
+  .deed-table th, .deed-table td { padding-top: 3px; padding-bottom: 3px; }
+  .modal-actions { margin-top: 10px; gap: 6px; }
+  .modal-actions.stack .btn { padding: .55em 1em; }
+}
+@media (max-height: 460px) {
+  .modal-card { width: min(620px, 100%); }
+  .modal-card.modal-chance { width: min(420px, 100%); }
+  .modal-actions.stack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modal-body .hint { display: none; }
+}
