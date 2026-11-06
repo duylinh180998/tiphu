@@ -329,10 +329,35 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 
 /* ---------- Trạng thái chọn ô ---------- */
 /* Chỉ làm tối mặt ô (filter trên phần tử 3D sẽ làm phẳng công trình trên ô) */
-.board.selecting .tile:not(.selectable) .tile-face { filter: brightness(.42) saturate(.55); }
-.board.selecting .tile:not(.selectable) { box-shadow: none; }
-.board.selecting .tile.selectable { animation: selectGlow 1s ease-in-out infinite; z-index: 7; }
-.view-3d .board.selecting .tile.selectable { transform: translateZ(18px); }
+/* Ô không chọn được: tối và xám hẳn để các ô chọn được nổi bật */
+.board.selecting .tile:not(.selectable) .tile-face { filter: brightness(.45) grayscale(.75); }
+.board.selecting .tile:not(.selectable) { box-shadow: none; background: linear-gradient(160deg, #8a867d, #6f6b63); }
+/* Ô chọn được: viền vàng dày phát sáng nhấp nháy, nổi cao lên, mặt ô sáng hơn */
+.board.selecting .tile.selectable { z-index: 7; cursor: pointer; animation: selectGlow 1s ease-in-out infinite; }
+.board.selecting .tile.selectable .tile-face { filter: brightness(1.08) saturate(1.15); }
+.view-3d .board.selecting .tile.selectable { transform: translateZ(22px); }
+.view-3d .board.selecting .tile.selectable:hover { transform: translateZ(34px); }
+.view-2d .board.selecting .tile.selectable:hover { transform: scale(1.08); }
+.board.selecting .tile.selectable:hover { animation-duration: .45s; }
+/* Ghim vàng nhảy nhót phía trên mỗi ô chọn được */
+.sel-pin { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(64px); pointer-events: none; z-index: 9; }
+.view-2d .sel-pin { top: 22%; transform: none; }
+.bb-pin { line-height: 0; }
+.pin {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1;
+  color: #9a3412;
+  background: radial-gradient(circle at 35% 30%, #fffbe0, #facc15 58%, #f59e0b);
+  box-shadow: 0 0 0 3px #fff, 0 0 18px 6px rgba(250, 204, 21, .75), 0 6px 12px rgba(0, 0, 0, .3);
+  animation: pinBounce .9s ease-in-out infinite;
+}
+.view-2d .pin { width: 30px; height: 30px; font-size: 15px; }
 .tile.chosen { animation: chosenGlow .8s ease-in-out infinite; z-index: 8; }
 .view-3d .tile.chosen { transform: translateZ(20px); }
 .tile.pulse .tile-face { animation: landPulse .75s ease-out; }
@@ -505,7 +530,11 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 @keyframes tokenHop { 0% { transform: translateY(0); } 45% { transform: translateY(-34px) scale(1.06); } 100% { transform: translateY(0); } }
 @keyframes tokenFly { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-150px) scale(1.4); } 100% { transform: translateY(0) scale(1); } }
 @keyframes toss3d { 0% { transform: translateZ(0); } 28% { transform: translateZ(130px); } 58% { transform: translateZ(0); } 74% { transform: translateZ(26px); } 100% { transform: translateZ(0); } }
-@keyframes selectGlow { 0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 14px 3px rgba(255, 255, 255, .6); } 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 28px 8px rgba(251, 191, 36, .8); } }
+@keyframes selectGlow {
+  0%, 100% { box-shadow: inset 0 0 0 5px #facc15, 0 0 0 3px #fff, 0 0 18px 6px rgba(250, 204, 21, .7); }
+  50% { box-shadow: inset 0 0 0 5px #fde047, 0 0 0 5px #fff, 0 0 38px 14px rgba(250, 204, 21, .95); }
+}
+@keyframes pinBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
 @keyframes chosenGlow { 0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 18px 5px rgba(255, 255, 255, .7); } 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 30px 10px rgba(251, 191, 36, .85); } }
 @keyframes landPulse { 0% { box-shadow: inset 0 0 0 0 rgba(255, 255, 255, .9), inset 0 0 0 0 rgba(251, 191, 36, .8); } 100% { box-shadow: inset 0 0 0 40px rgba(255, 255, 255, 0), inset 0 0 0 6px rgba(251, 191, 36, 0); } }
 @keyframes fxRise { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 18% { opacity: 1; transform: translateY(-20px) scale(1.15); } 100% { opacity: 0; transform: translateY(-110px) scale(1); } }

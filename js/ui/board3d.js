@@ -119,7 +119,19 @@ export function renderTiles() {
 export function setSelectable(cands) {
   const set = cands ? new Set(cands) : null;
   dom.board.classList.toggle('selecting', !!set);
-  tileEls.forEach((e, i) => e.classList.toggle('selectable', !!set && set.has(i)));
+  tileEls.forEach((e, i) => {
+    const on = !!set && set.has(i);
+    e.classList.toggle('selectable', on);
+    // Ghim vàng ▼ đứng phía trên ô để nhìn từ xa cũng thấy ô nào chọn được
+    const pin = e.querySelector(':scope > .sel-pin');
+    if (on && !pin) {
+      const p = el('div', 'sel-pin');
+      p.innerHTML = billboard(0, 0, '<div class="pin">▼</div>', 'bb-pin');
+      e.appendChild(p);
+    } else if (!on && pin) {
+      pin.remove();
+    }
+  });
 }
 
 export function pulseTile(i) {
