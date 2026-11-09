@@ -7,9 +7,9 @@ import { ISLAND_FEE } from '../config.js';
 import { store } from '../core/store.js';
 import { pn } from '../game/text.js';
 import { stageActions } from './hud.js';
-import { selectTile } from './select.js';
+import { selectTile, sellOnBoard } from './select.js';
 import {
-  purchaseDialog, upgradeDialog, buyoutDialog, resortDialog, chanceDialog, sellDialog, bankruptDialog,
+  purchaseDialog, upgradeDialog, buyoutDialog, resortDialog, chanceDialog, bankruptDialog,
 } from './dialogs.js';
 
 function rollStatus(p, d) {
@@ -48,7 +48,7 @@ export function localAsk(p, kind, d) {
     case 'card':
       return chanceDialog(p, d.id, { ack: true });
     case 'sell':
-      return sellDialog(p, d.amount, d.to);
+      return sellOnBoard(p, d.amount, d.to);
     case 'bankrupt':
       return bankruptDialog(p, d);
     default:

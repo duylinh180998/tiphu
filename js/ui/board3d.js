@@ -5,10 +5,10 @@
  * - Chế độ 2D: bỏ nghiêng, mặt chữ trở về nằm ngang như bàn cờ phẳng.
  */
 import { TILES, GROUPS, gridPos, isCorner, sideOf } from '../data/board.js';
-import { LEVEL_ICONS, RESORT_PRICE, LANDMARK } from '../config.js';
+import { LEVEL_ICONS, RESORT_PRICE, LANDMARK, STREET_FEST_MULT } from '../config.js';
 import { store } from '../core/store.js';
 import { esc, fmt } from '../core/util.js';
-import { rentOf, hasMonopoly, isOutage } from '../game/rules.js';
+import { rentOf, hasMonopoly, isOutage, isStreetFest } from '../game/rules.js';
 import { dom, el } from './dom.js';
 import { cityModel, resortModel, billboard } from './models.js';
 
@@ -101,11 +101,13 @@ export function renderTiles() {
     if (t.type === 'city') {
       e.classList.toggle('mono', !!s && hasMonopoly(i));
       const fest = !!s && s.festival.tile === i;
+      const street = !!s && !fest && isStreetFest(i);
       const out = !!s && isOutage(i);
       e.classList.toggle('festival', fest);
+      e.classList.toggle('street-fest', street);
       e.classList.toggle('outage', out);
       // Nhãn in phẳng ngay dưới giá thuê của chính ô đó: không bị công trình che, không nhầm ô
-      const tags = (fest ? `<span class="tag tag-fest">🎉 x${s.festival.mult}</span>` : '') + (out ? `<span class="tag tag-out">🔌 ${pr.outage} vòng</span>` : '');
+      const tags = (fest ? `<span class="tag tag-fest">🎉 x${s.festival.mult}</span>` : '') + (street ? `<span class="tag tag-street">🎊 x${STREET_FEST_MULT} · ${s.street.left}v</span>` : '') + (out ? `<span class="tag tag-out">🔌 ${pr.outage} vòng</span>` : '');
       const box = e.querySelector('.tags');
       if (box.dataset.v !== tags) {
         box.dataset.v = tags;
@@ -115,21 +117,32 @@ export function renderTiles() {
   });
 }
 
-/** Đánh dấu các ô được phép chọn (null để tắt chế độ chọn) */
-export function setSelectable(cands) {
+/**
+ * Đánh dấu các ô được phép chọn (null để tắt chế độ chọn).
+ * pinFor(i) (tùy chọn) trả về HTML của ghim trên ô, mặc định là mũi tên ▼; picked là các ô đã chọn
+ * (chế độ chọn nhiều, ví dụ bán tài sản).
+ */
+export function setSelectable(cands, { pinFor = null, picked = null } = {}) {
   const set = cands ? new Set(cands) : null;
   dom.board.classList.toggle('selecting', !!set);
   tileEls.forEach((e, i) => {
     const on = !!set && set.has(i);
     e.classList.toggle('selectable', on);
+    e.classList.toggle('picked', on && !!picked && picked.has(i));
     // Ghim vàng ▼ đứng phía trên ô để nhìn từ xa cũng thấy ô nào chọn được
-    const pin = e.querySelector(':scope > .sel-pin');
-    if (on && !pin) {
-      const p = el('div', 'sel-pin');
-      p.innerHTML = billboard(0, 0, '<div class="pin">▼</div>', 'bb-pin');
-      e.appendChild(p);
-    } else if (!on && pin) {
-      pin.remove();
+    let pin = e.querySelector(':scope > .sel-pin');
+    if (!on) {
+      if (pin) pin.remove();
+      return;
+    }
+    const html = pinFor ? pinFor(i) : '<div class="pin">▼</div>';
+    if (!pin) {
+      pin = el('div', 'sel-pin');
+      e.appendChild(pin);
+    }
+    if (pin.dataset.v !== html) {
+      pin.dataset.v = html;
+      pin.innerHTML = billboard(0, 0, html, 'bb-pin');
     }
   });
 }

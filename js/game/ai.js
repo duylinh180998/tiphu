@@ -255,6 +255,7 @@ export const AI = {
         if (groupComplete(t.group, p.id)) s += 260;
         if (pr.level === LANDMARK) s += 420;
         if (store.state.festival.tile === i) s += 220;
+        else if (store.state.street && store.state.street.tile === i) s += 90;
       }
       return s;
     };

@@ -27,6 +27,7 @@ export function cacheDom() {
     ['overlayBottom', '#overlay-bottom'],
     ['roundPill', '#round-pill'],
     ['festPill', '#festival-pill'],
+    ['streetPill', '#street-pill'],
     ['inflPill', '#inflation-pill'],
     ['roomPill', '#room-pill'],
     ['status', '#stage-status'],

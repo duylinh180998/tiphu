@@ -3,12 +3,14 @@
  */
 import { humanWait } from '../core/session.js';
 import { store } from '../core/store.js';
-import { esc, fmtFull } from '../core/util.js';
+import { esc, fmt, fmtFull } from '../core/util.js';
 import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS, LANDMARK } from '../config.js';
 import { TILES, GROUPS, GROUP_TILES, SPECIAL_DESC } from '../data/board.js';
-import { rentOf, buyoutCost, sellValue, resortCount, inflationPct, hasMonopoly, isOutage } from '../game/rules.js';
+import { P, ownedBy, propValue, rentOf, buyoutCost, sellValue, resortCount, inflationPct, hasMonopoly, isOutage, isStreetFest } from '../game/rules.js';
 import { dom } from './dom.js';
-import { setSelectable, tileEl } from './board3d.js';
+import { setSelectable, tileEl, pulseTile } from './board3d.js';
+import { pn } from '../game/text.js';
+import { AI } from '../game/ai.js';
 import { beginPrompt } from './prompt.js';
 import { setStatus, clearActions } from './hud.js';
 import { Sound } from './audio.js';
@@ -50,6 +52,85 @@ export function selectTile(cands, { title, cancelLabel = null }) {
       });
       dom.actions.appendChild(b);
     }
+  });
+}
+
+/**
+ * Bán tài sản trả nợ ngay trên bàn cờ: các ô của người chơi phát sáng kèm số tiền bán được,
+ * nhấn vào ô để chọn / bỏ chọn; bảng ở giữa bàn cờ hiện số tiền còn thiếu.
+ * Có thể mở danh sách để chọn theo tên (rê chuột / chạm vào dòng sẽ làm ô tương ứng nhấp nháy).
+ * Trả về danh sách ô đã chọn.
+ */
+export function sellOnBoard(p, amount, toId) {
+  return humanWait((done) => {
+    const picked = new Set();
+    const to = toId != null ? P(toId) : null;
+    let showList = false;
+    let end = () => {};
+    const finish = (v) => {
+      end();
+      selectHandler = null;
+      setSelectable(null);
+      clearActions();
+      setStatus('');
+      done(v);
+    };
+    end = beginPrompt(finish);
+    const gainOf = () => [...picked].reduce((sum, i) => sum + sellValue(i), 0);
+    const shortOf = () => Math.max(0, amount - p.money - gainOf());
+    const toggle = (i) => {
+      if (picked.has(i)) picked.delete(i);
+      else picked.add(i);
+      Sound.play('click');
+      render();
+    };
+    const pinFor = (i) => `<div class="pin pin-sell${picked.has(i) ? ' on' : ''}">${picked.has(i) ? '✔ ' : ''}+${fmt(sellValue(i))}</div>`;
+    const rowHTML = (i) => {
+      const t = TILES[i];
+      const pr = store.state.props[i];
+      const color = t.type === 'city' ? GROUPS[t.group].color : '#0ea5e9';
+      const lvl = t.type === 'city' ? `${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}` : '🏖️ Khu nghỉ dưỡng';
+      return `<button type="button" class="sell-chip${picked.has(i) ? ' picked' : ''}" data-sell="${i}" style="--g:${color}" title="${esc(lvl)} · giá trị ${fmtFull(propValue(i))}"><span class="sell-check">${picked.has(i) ? '✔' : ''}</span><span class="sell-name">${esc(t.name)}</span><span class="sell-gain">+${fmt(sellValue(i))}</span></button>`;
+    };
+    const render = () => {
+      const props = ownedBy(p.id);
+      const short = shortOf();
+      setSelectable(props, { pinFor, picked });
+      setStatus(`<div class="sell-board">
+        <div class="sell-title">🆘 ${pn(p)} cần trả <b>${fmtFull(amount)}</b> ${to ? `cho ${pn(to)}` : 'cho ngân hàng'} — chọn ô trên bàn cờ để bán</div>
+        <div class="sell-mini"><span>💵 <b>${fmt(p.money)}</b></span><span>➕ Bán <b class="pos">${fmt(gainOf())}</b></span><span>${short ? `❗ Thiếu <b class="neg">${fmt(short)}</b>` : '✅ <b class="pos">Đã đủ</b>'}</span></div>
+        ${showList ? `<div class="sell-chips">${props.map(rowHTML).join('')}</div>` : ''}
+      </div>`);
+      dom.hint.textContent = '👆 Nhấn vào ô phát sáng để chọn / bỏ chọn · bán cho ngân hàng nhận lại 50% giá trị';
+      dom.actions.innerHTML = `<button type="button" class="btn btn-ghost" data-list>${showList ? '🔼 Ẩn danh sách' : '📋 Danh sách'}</button><button type="button" class="btn btn-ghost" data-auto>🤖 Gợi ý</button><button type="button" class="btn btn-green" data-pay data-hotkey="1" ${short ? 'disabled' : ''}>✅ Bán &amp; trả nợ</button>`;
+      dom.status.querySelectorAll('[data-sell]').forEach((b) => {
+        const i = Number(b.dataset.sell);
+        b.addEventListener('click', () => toggle(i));
+        b.addEventListener('pointerenter', () => pulseTile(i));
+      });
+      dom.actions.querySelector('[data-list]').addEventListener('click', () => {
+        showList = !showList;
+        Sound.play('click');
+        render();
+      });
+      dom.actions.querySelector('[data-auto]').addEventListener('click', () => {
+        picked.clear();
+        AI.sellList(p, amount).forEach((i) => picked.add(i));
+        Sound.play('click');
+        render();
+      });
+      dom.actions.querySelector('[data-pay]').addEventListener('click', () => {
+        if (shortOf() > 0) return;
+        Sound.play('cash');
+        finish([...picked]);
+      });
+    };
+    selectHandler = (i) => {
+      if (!ownedBy(p.id).includes(i)) return false;
+      toggle(i);
+      return true;
+    };
+    render();
   });
 }
 
@@ -106,7 +187,7 @@ export function tileInfoHTML(i) {
       .join('');
     let status;
     if (owner) {
-      const fest = (hasMonopoly(i) ? ' <span class="tt-fest">🎨x2</span>' : '') + (s.festival.tile === i ? ` <span class="tt-fest">🎉x${s.festival.mult}</span>` : '');
+      const fest = (hasMonopoly(i) ? ' <span class="tt-fest">🎨x2</span>' : '') + (s.festival.tile === i ? ` <span class="tt-fest">🎉x${s.festival.mult}</span>` : isStreetFest(i) ? ` <span class="tt-fest">🎊x2</span>` : '');
       status = `<div class="tt-owner" style="--pc:${owner.color}">${esc(owner.avatar)} ${esc(owner.name)} · ${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}</div>
         <div class="tt-line">💰 Tiền thuê hiện tại: <b>${fmtFull(rentOf(i))}</b>${fest}${inflTag()}</div>
         ${isOutage(i) ? `<div class="tt-line">🔌 Mất điện — không thu tiền thuê (còn ${pr.outage} vòng)</div>` : ''}
@@ -114,6 +195,9 @@ export function tileInfoHTML(i) {
         <div class="tt-line">💱 Bán cho ngân hàng: ${fmtFull(sellValue(i))}</div>`;
     } else {
       status = `<div class="tt-line">🏷️ Chưa có chủ — giá từ <b>${fmtFull(t.eco.value[1])}</b></div>`;
+    }
+    if (s && isStreetFest(i)) {
+      status += `<div class="tt-line">🎊 Lễ Hội Đường Phố: thuê x2, còn ${s.street.left} vòng</div>`;
     }
     return `<div class="tt-head" style="--g:${g.color}"><div class="tt-group">${esc(g.name)} <span class="gdots">${groupDots(t.group)}</span></div><div class="tt-name">${esc(t.name)}</div></div>
       ${status}

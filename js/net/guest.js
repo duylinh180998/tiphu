@@ -186,6 +186,10 @@ function cleanState(s) {
   });
   s.log = Array.isArray(s.log) ? s.log.slice(0, 160).map(cleanLog) : [];
   if (!s.festival) s.festival = { tile: null, mult: 1, editions: 0 };
+  const sf = s.street;
+  s.street = sf && typeof sf === 'object' && (sf.tile == null || int(sf.tile, 0, TILE_COUNT - 1))
+    ? { tile: sf.tile == null ? null : sf.tile, left: Number(sf.left) || 0, next: Number(sf.next) || 0 }
+    : { tile: null, left: 0, next: 0 };
   return s;
 }
 

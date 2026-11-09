@@ -1,5 +1,5 @@
 /**
- * Hộp thoại: mua đất, nâng cấp, mua đứt, khu nghỉ dưỡng, thẻ Cơ Hội, bán tài sản,
+ * Hộp thoại: mua đất, nâng cấp, mua đứt, khu nghỉ dưỡng, thẻ Cơ Hội,
  * phá sản, thông tin người chơi, kết thúc ván, nhật ký, luật chơi.
  */
 import { humanWait } from '../core/session.js';
@@ -8,10 +8,9 @@ import { esc, fmt, fmtFull } from '../core/util.js';
 import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS, LANDMARK } from '../config.js';
 import { TILES, GROUPS, CARD_BY_ID } from '../data/board.js';
 import {
-  P, isBot, ownedBy, netWorth, completedGroups, resortCount, propValue, sellValue, liquidation, rentOf, criticalTiles,
+  P, isBot, ownedBy, netWorth, completedGroups, resortCount, liquidation, rentOf, criticalTiles,
   inflationPct, hasMonopoly, isOutage,
 } from '../game/rules.js';
-import { AI } from '../game/ai.js';
 import { pn } from '../game/text.js';
 import { dom, el } from './dom.js';
 import { beginPrompt } from './prompt.js';
@@ -75,7 +74,9 @@ export function deedHTML(i) {
   const rows = [1, 2, 3, 4, 5]
     .map((L) => `<tr class="${owned && pr.level === L ? 'cur' : ''}${L === LANDMARK ? ' lm' : ''}"><td>${LEVEL_ICONS[L]} ${LEVEL_NAMES[L]}</td><td>${L === 1 ? fmtFull(t.eco.costs[1]) : `+${fmtFull(t.eco.costs[L])}`}</td><td><b>${fmtFull(t.eco.rents[L])}</b></td></tr>`)
     .join('');
-  let notes = store.state.festival.tile === i ? `<div class="deed-note">🎉 Đang tổ chức Lễ Hội — tiền thuê x${store.state.festival.mult}</div>` : '';
+  let notes = store.state.festival.tile === i
+    ? `<div class="deed-note">🎉 Đang tổ chức Lễ Hội — tiền thuê x${store.state.festival.mult}</div>`
+    : store.state.street && store.state.street.tile === i ? `<div class="deed-note">🎊 Lễ Hội Đường Phố — tiền thuê x2 (còn ${store.state.street.left} vòng)</div>` : '';
   if (hasMonopoly(i)) notes += '<div class="deed-note deed-mono">🎨 Chủ sở hữu trọn nhóm màu — tiền thuê x2</div>';
   else notes += '<div class="deed-note deed-tip">🎨 Sở hữu trọn nhóm màu: tiền thuê cả nhóm x2</div>';
   if (isOutage(i)) notes += `<div class="deed-note deed-infl">🔌 Đang mất điện — không thu tiền thuê (còn ${pr.outage} vòng)</div>`;
@@ -186,65 +187,6 @@ export function chanceDialog(p, cardId, { ack = false } = {}) {
     html,
     cls: 'modal-chance',
     buttons: [{ label: 'OK, tiếp tục', value: true, style: 'primary', hotkey: true }],
-  });
-}
-
-function sellRowHTML(i, picked) {
-  const t = TILES[i];
-  const pr = store.state.props[i];
-  const color = t.type === 'city' ? GROUPS[t.group].color : '#0ea5e9';
-  const lvl = t.type === 'city' ? `${LEVEL_ICONS[pr.level]} ${LEVEL_NAMES[pr.level]}` : '🏖️ Khu nghỉ dưỡng';
-  return `<button type="button" class="sell-row${picked ? ' picked' : ''}" data-sell="${i}" style="--g:${color}"><span class="sell-band"></span><span class="sell-check">${picked ? '✔' : ''}</span><span class="sell-info"><span class="sell-name">${esc(t.name)}</span><span class="sell-meta">${lvl} · giá trị ${fmtFull(propValue(i))}</span></span><span class="sell-gain">+${fmtFull(sellValue(i))}</span></button>`;
-}
-
-/** Chọn tài sản để bán cho ngân hàng (50% giá trị) cho tới khi đủ trả nợ. Trả về danh sách ô. */
-export function sellDialog(p, amount, toId) {
-  return humanWait((done) => {
-    const bd = el('div', 'modal-backdrop');
-    const card = el('div', 'modal-card wide');
-    bd.appendChild(card);
-    dom.modalRoot.appendChild(bd);
-    const picked = new Set();
-    let end = () => {};
-    const finish = (v) => {
-      end();
-      bd.remove();
-      done(v);
-    };
-    end = beginPrompt(finish);
-    const to = toId != null ? P(toId) : null;
-    const render = () => {
-      const props = ownedBy(p.id);
-      const gain = [...picked].reduce((sum, i) => sum + sellValue(i), 0);
-      const short = Math.max(0, amount - p.money - gain);
-      card.innerHTML = `
-        <div class="modal-head"><div class="modal-icon">🆘</div><div><div class="modal-title">Không đủ tiền!</div><div class="modal-sub">${pn(p)} cần trả <b>${fmtFull(amount)}</b> ${to ? `cho ${pn(to)}` : 'cho ngân hàng'}</div></div></div>
-        <div class="sell-summary"><div>Tiền mặt<b>${fmtFull(p.money)}</b></div><div>Bán được<b class="pos">+${fmtFull(gain)}</b></div><div>Còn thiếu<b class="${short ? 'neg' : 'pos'}">${fmtFull(short)}</b></div></div>
-        <p class="hint">Chọn thành phố / khu nghỉ dưỡng để bán cho ngân hàng (nhận lại 50% giá trị) cho tới khi đủ tiền.</p>
-        <div class="sell-list">${props.map((i) => sellRowHTML(i, picked.has(i))).join('')}</div>
-        <div class="modal-actions"><button type="button" class="btn btn-ghost" data-auto>🤖 Gợi ý tự động</button><button type="button" class="btn btn-green" data-pay data-hotkey="1" ${short ? 'disabled' : ''}>✅ Bán &amp; thanh toán</button></div>`;
-      card.querySelectorAll('[data-sell]').forEach((b) =>
-        b.addEventListener('click', () => {
-          const i = Number(b.dataset.sell);
-          if (picked.has(i)) picked.delete(i);
-          else picked.add(i);
-          Sound.play('click');
-          render();
-        })
-      );
-      card.querySelector('[data-auto]').addEventListener('click', () => {
-        picked.clear();
-        AI.sellList(p, amount).forEach((i) => picked.add(i));
-        Sound.play('click');
-        render();
-      });
-      card.querySelector('[data-pay]').addEventListener('click', () => {
-        if (amount - p.money - [...picked].reduce((sum, i) => sum + sellValue(i), 0) > 0) return;
-        Sound.play('cash');
-        finish([...picked]);
-      });
-    };
-    render();
   });
 }
 
@@ -388,6 +330,7 @@ const RULES_HTML = `
       <li>🏁 <b>Bắt Đầu</b>: đi qua nhận $300K; dừng đúng ô được nâng 1 thành phố thêm 1 cấp (kể cả lên Biểu Tượng).</li>
       <li>🏝️ <b>Đảo Hoang</b>: kẹt 3 lượt. Thoát bằng đổ đôi (đi luôn, không thêm lượt) hoặc trả $200K; thẻ Thoát Đảo tự dùng. Hết 3 lượt thì lượt sau tự đi.</li>
       <li>🎉 <b>Lễ Hội Thế Giới</b>: chọn 1 thành phố của mình, tiền thuê x2, các lần sau x3, x4, x5. Mỗi lúc chỉ 1 thành phố tổ chức.</li>
+      <li>🎊 <b>Lễ Hội Đường Phố</b> (ngẫu nhiên): từ một vòng ngẫu nhiên đầu ván, 1 thành phố được tổ chức lễ hội, tiền thuê <b>x2</b> trong <b>2 vòng</b>, sau đó lễ hội chuyển sang thành phố khác.</li>
       <li>✈️ <b>Chuyến Bay Thế Giới</b>: lượt sau trả $50K để bay tới bất kỳ ô nào.</li>
       <li>🏖️ <b>Khu Nghỉ Dưỡng</b> (4 ô): thuê $50K / $100K / $200K theo số khu sở hữu; đủ 4 khu là thắng.</li>
       <li>💸 <b>Thuế</b>: nộp 10% tổng tài sản (tiền mặt + bất động sản).</li>
