@@ -167,6 +167,8 @@ body:not(.in-game) #hud, body:not(.in-game) #toolbar .tb-game, body:not(.in-game
 .stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .stage-actions .btn { font-size: 14px; box-shadow: 0 8px 22px rgba(0, 0, 0, .35); }
 .stage-actions .btn-big { font-size: 19px; }
+.stage-actions .btn-ghost { background: rgba(15, 23, 42, .84); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18), 0 8px 22px rgba(0, 0, 0, .3); }
+.stage-actions .btn:disabled { opacity: .62; }
 /* Nút lắc xúc xắc: to, nổi khối như kẹo, viền trắng, vòng sáng lan ra nhịp nhàng, xúc xắc lắc lư */
 .stage-actions .btn-roll {
   font-size: 24px;
@@ -505,3 +507,35 @@ body.docked.side #chat-panel { left: auto; right: 66px; top: 8px; bottom: 8px; w
 
 /* ---------- 3D trên màn dọc: thanh hành động nằm dưới bàn cờ ---------- */
 body.bar-below #overlay-bottom { top: auto; bottom: 4px; width: calc(100% - 16px); transform: translateX(-50%); }
+
+/* Bảng bán tài sản ở giữa bàn cờ: gọn để bàn cờ vẫn nhìn thấy và chọn ô được */
+.sell-board { pointer-events: auto; display: flex; flex-direction: column; gap: 5px; max-width: min(440px, 92vw); }
+.sell-title { font-weight: 700; font-size: .92em; }
+.sell-mini { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: .9em; }
+.sell-mini b { font-family: var(--font-display); }
+.sell-mini .pos { color: #6ee7b7; }
+.sell-mini .neg { color: #fda4af; }
+.sell-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px; max-height: 20vh; overflow-y: auto; text-align: left; }
+.sell-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 8px 4px 6px;
+  border: 0;
+  border-left: 5px solid var(--g);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12.5px;
+  color: inherit;
+  cursor: pointer;
+  background: rgba(255, 255, 255, .08);
+}
+.sell-chip:hover { background: rgba(255, 255, 255, .16); }
+.sell-chip.picked { background: rgba(34, 197, 94, .25); box-shadow: inset 0 0 0 1.5px #4ade80; }
+.sell-chip .sell-check { width: 16px; height: 16px; border-radius: 5px; font-size: 11px; }
+.sell-chip.picked .sell-check { background: #4ade80; }
+.sell-chip .sell-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.sell-chip .sell-gain { font-size: 12px; }
+body.docked .sell-title { font-size: .85em; }
+body.docked .sell-chips { max-height: 16vh; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }

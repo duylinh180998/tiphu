@@ -124,6 +124,7 @@ button { font-family: inherit; }
   white-space: nowrap;
 }
 .pill-fest { background: linear-gradient(135deg, rgba(236, 72, 153, .5), rgba(245, 158, 11, .45)); }
+.pill-street { background: linear-gradient(135deg, rgba(124, 58, 237, .55), rgba(6, 182, 212, .5)); }
 .pill-infl { background: linear-gradient(135deg, rgba(239, 68, 68, .55), rgba(249, 115, 22, .42)); animation: pop .4s ease; }
 .pill-room { cursor: pointer; pointer-events: auto; background: linear-gradient(135deg, rgba(16, 185, 129, .45), rgba(6, 182, 212, .38)); }
 .dots::after { content: ''; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }

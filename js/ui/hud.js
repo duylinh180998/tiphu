@@ -6,6 +6,7 @@ import { store, S } from '../core/store.js';
 import { esc, fmt, fmtFull } from '../core/util.js';
 import { humanWait } from '../core/session.js';
 import { TILES } from '../data/board.js';
+import { STREET_FEST_MULT } from '../config.js';
 import { ownedBy, netWorth, completedGroups, resortCount, inflationPct, isBot } from '../game/rules.js';
 import { dom, el } from './dom.js';
 import { beginPrompt } from './prompt.js';
@@ -137,6 +138,10 @@ export function renderPills() {
   const f = s && s.festival;
   dom.festPill.classList.toggle('hidden', !(f && f.tile != null));
   if (f && f.tile != null) dom.festPill.textContent = `🎉 ${TILES[f.tile].name} x${f.mult}`;
+  const sf = s && s.street;
+  const showStreet = !!(sf && sf.tile != null);
+  dom.streetPill.classList.toggle('hidden', !showStreet);
+  if (showStreet) dom.streetPill.textContent = `🎊 ${TILES[sf.tile].name} x${STREET_FEST_MULT} · còn ${sf.left} vòng`;
   const pct = s ? inflationPct() : 0;
   dom.inflPill.classList.toggle('hidden', pct <= 0);
   if (pct > 0) dom.inflPill.textContent = `📈 Lạm phát +${pct}%`;

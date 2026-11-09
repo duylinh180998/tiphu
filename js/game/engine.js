@@ -4,7 +4,7 @@
  */
 import {
   SAVE_VERSION, TILE_COUNT, START_TILE, ISLAND_TILE, FESTIVAL_TILE, TOUR_TILE, TAX_TILE, START_SALARY, ISLAND_FEE,
-  ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP, LEVEL_ICONS,
+  ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, FESTIVAL_MULTS, STREET_FEST_ROUNDS, STREET_FEST_FIRST, STREET_FEST_MULT, INFLATION_START, INFLATION_STEP, LEVEL_ICONS,
   LEVEL_NAMES, MAX_LOG, PARITY_USES, OUTAGE_ROUNDS, HOTEL, LANDMARK,
 } from '../config.js';
 import { TILES, CITY_TILES, CHANCE_DECK, CARD_BY_ID } from '../data/board.js';
@@ -14,7 +14,7 @@ import { rand, shuffle } from '../core/rng.js';
 import { fmt, fmtFull, esc } from '../core/util.js';
 import {
   P, isBot, alivePlayers, ownedBy, citiesOf, resortCount, sellValue, buyoutCost, rentOf, netWorth, liquidation,
-  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted, buildCap, unlockLapOf,
+  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted, buildCap, unlockLapOf, isStreetFest,
 } from './rules.js';
 import { ask } from './players.js';
 import { AI } from './ai.js';
@@ -56,6 +56,8 @@ export function createState(cfg) {
     })),
     props: TILES.map((t) => (t.type === 'city' || t.type === 'resort' ? { owner: null, level: 0, outage: 0 } : null)),
     festival: { tile: null, mult: 1, editions: 0 },
+    // Lễ Hội Đường Phố ngẫu nhiên: tile đang tổ chức, left = số vòng còn lại, next = vòng sẽ bắt đầu
+    street: { tile: null, left: 0, next: STREET_FEST_FIRST[0] + Math.floor(Math.random() * (STREET_FEST_FIRST[1] - STREET_FEST_FIRST[0] + 1)) },
     current: 0,
     first: 0, // người đi đầu tiên (bốc thăm khi bắt đầu ván); một vòng kết thúc khi lượt quay lại người này
     round: 1,
@@ -157,6 +159,7 @@ function nextPlayer() {
     s.round++;
     log(`Vòng ${s.round}`, 'round');
     tickOutages();
+    tickStreetFest();
     if (s.round === INFLATION_START + 1) {
       const pct = Math.round(INFLATION_STEP * 100);
       log(`📈 Bắt đầu <b>lạm phát</b>: từ vòng này tiền thuê tăng thêm ${pct}% mỗi vòng!`, 'bad');
@@ -171,6 +174,37 @@ function tickOutages() {
     const pr = st().props[i];
     if (pr.outage > 0 && --pr.outage === 0) log(`💡 ${tn(i)} đã có điện trở lại.`, 'good');
   });
+}
+
+/**
+ * Đầu mỗi vòng: Lễ Hội Đường Phố xuất hiện (lần đầu ở vòng ngẫu nhiên), mỗi thành phố tổ chức
+ * STREET_FEST_ROUNDS vòng rồi chuyển sang thành phố khác. Ưu tiên thành phố đã có chủ để có tác dụng.
+ */
+function tickStreetFest() {
+  const s = st();
+  if (!s.street) s.street = { tile: null, left: 0, next: s.round };
+  const sf = s.street;
+  if (sf.tile != null) {
+    sf.left--;
+    if (sf.left > 0) return;
+  } else if (s.round < sf.next) {
+    return;
+  }
+  const old = sf.tile;
+  const pool = CITY_TILES.filter((i) => i !== old && i !== s.festival.tile);
+  const owned = pool.filter((i) => s.props[i].owner != null);
+  const list = owned.length ? owned : pool;
+  if (!list.length) return;
+  const tile = list[Math.floor(rand() * list.length)];
+  sf.tile = tile;
+  sf.left = STREET_FEST_ROUNDS;
+  const msg = old != null
+    ? `🎊 Lễ Hội Đường Phố chuyển từ ${tn(old)} sang ${tn(tile)} — tiền thuê x${STREET_FEST_MULT} trong ${STREET_FEST_ROUNDS} vòng!`
+    : `🎊 Lễ Hội Đường Phố khai mạc tại ${tn(tile)} — tiền thuê x${STREET_FEST_MULT} trong ${STREET_FEST_ROUNDS} vòng!`;
+  log(msg, 'good');
+  view.sound('festival');
+  view.tileFx(tile, `🎊x${STREET_FEST_MULT}`, 'big');
+  view.toast(`🎊 Lễ Hội Đường Phố tại ${esc(TILES[tile].name)} — thuê x${STREET_FEST_MULT} (${STREET_FEST_ROUNDS} vòng)`, 'gold');
 }
 
 async function turnIntro(p, bonus) {
@@ -620,6 +654,7 @@ async function chargeRent(p, owner, i) {
   const tags = [];
   if (hasMonopoly(i)) tags.push('🎨x2');
   if (TILES[i].type === 'city' && st().festival.tile === i) tags.push(`🎉x${st().festival.mult}`);
+  else if (isStreetFest(i)) tags.push(`🎊x${STREET_FEST_MULT}`);
   log(`💸 ${pn(p)} trả ${fmtFull(rent)} tiền thuê${tags.length ? ` (${tags.join(' ')})` : ''} cho ${pn(owner)} tại ${tn(i)}.`, 'pay');
   view.tileFx(i, `-${fmt(rent)}`, 'loss');
   await pay(p, rent, owner);

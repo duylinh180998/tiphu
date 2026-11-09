@@ -90,7 +90,7 @@ Mỗi người bắt đầu với **$2M**. Ván đấu mặc định **30 vòng*
 - Dừng lại thành phố của mình: nâng tiếp tới mức đã mở khóa; đang là Khách sạn thì được xây **Biểu Tượng**.
 - **Biểu Tượng** không bao giờ xây ngay khi mới mua đất. Thành phố phải là Khách sạn, sau đó: dừng lại ô đó lần nữa, **dừng đúng ô Bắt Đầu**, hoặc **mua đứt** một Khách sạn của đối thủ rồi nâng ngay.
 - 🎨 **Độc quyền nhóm màu**: sở hữu trọn bộ thành phố cùng màu (2 hoặc 3 ô) → tiền thuê của cả nhóm **x2**.
-- Tiền thuê = thuê theo cấp × độc quyền màu (x2) × Lễ Hội (x2…x5).
+- Tiền thuê = thuê theo cấp × độc quyền màu (x2) × Lễ Hội (x2…x5, hoặc Lễ Hội Đường Phố x2).
 
 ### 💥 Mua đứt
 - Dừng ở thành phố đối thủ: trả tiền thuê trước, rồi được quyền trả **gấp đôi giá trị đầu tư hiện tại** (trả thẳng cho chủ cũ) để mua đứt, sau đó nâng cấp tiếp ngay trong lượt.
@@ -100,6 +100,7 @@ Mỗi người bắt đầu với **$2M**. Ván đấu mặc định **30 vòng*
 - 🏁 **Bắt Đầu**: đi qua hoặc dừng lại đều nhận **$300K**. Dừng đúng ô được trả tiền nâng 1 thành phố của mình thêm **1 cấp** (rất hợp để nâng Khách sạn lên Biểu Tượng từ xa).
 - 🏝️ **Đảo Hoang**: kẹt **3 lượt**. Đầu lượt chọn trả **$200K** hoặc lắc tìm **đôi** (ra đôi thì đi luôn nhưng không được thêm lượt). Thẻ Thoát Đảo Hoang tự dùng khi rơi vào đảo. Hết 3 lượt thì lượt sau tự đi, không mất tiền.
 - 🎉 **Lễ Hội Thế Giới**: chọn 1 thành phố của mình tổ chức Lễ Hội — tiền thuê **x2**, các lần tổ chức sau **x3, x4, x5**. Mỗi lúc chỉ có 1 thành phố tổ chức.
+- 🎊 **Lễ Hội Đường Phố** (sự kiện ngẫu nhiên): xuất hiện lần đầu ở một vòng ngẫu nhiên (vòng 2–4) tại 1 thành phố (ưu tiên thành phố đã có chủ) — tiền thuê **x2** trong **2 vòng**, rồi tự chuyển sang thành phố khác. Nếu thành phố đó đang có Lễ Hội Thế Giới thì chỉ tính hệ số Lễ Hội Thế Giới.
 - ✈️ **Chuyến Bay Thế Giới**: lượt kế tiếp trả **$50K** để bay tới bất kỳ ô nào (bay qua Bắt Đầu vẫn nhận lương); không đủ tiền thì lắc như thường.
 - 🏖️ **Khu Nghỉ Dưỡng** (ô 4, 12, 20, 28): giá $200K, không xây nhà; thuê **$50K / $100K / $200K** khi chủ sở hữu 1 / 2 / 3 khu. Đủ 4 khu là **thắng ngay**.
 - 💸 **Thuế** (ô 30): nộp **10% tổng tài sản** (tiền mặt + giá trị bất động sản).

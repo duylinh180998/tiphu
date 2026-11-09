@@ -107,6 +107,7 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 }
 .tile.landmark { box-shadow: inset 0 0 0 4px var(--owner), 0 0 26px 4px rgba(251, 191, 36, .75); }
 .tile.festival { box-shadow: inset 0 0 0 4px var(--owner, #ec4899), 0 0 30px 6px rgba(236, 72, 153, .85); }
+.tile.street-fest { box-shadow: inset 0 0 0 3px #a855f7, 0 0 22px 4px rgba(168, 85, 247, .7); }
 
 /* Mặt chữ: khung 100x150, "trên" của khung = phía xa camera. Cạnh trái/phải xoay 90°. */
 .tile-face {
@@ -246,6 +247,7 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .tags:empty { display: none; }
 .tag { font-size: 11px; font-weight: 800; line-height: 1; padding: 3px 7px; border-radius: 999px; color: #fff; white-space: nowrap; box-shadow: 0 0 0 2px #fff; }
 .tag-fest { background: linear-gradient(135deg, #ec4899, #f59e0b); }
+.tag-street { background: linear-gradient(135deg, #7c3aed, #06b6d4); }
 .tag-out { background: linear-gradient(135deg, #475569, #0f172a); }
 .tile.outage .tile-face { filter: grayscale(.7) brightness(.82); }
 
@@ -516,3 +518,28 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 @keyframes landPulse { 0% { box-shadow: inset 0 0 0 0 rgba(255, 255, 255, .9), inset 0 0 0 0 rgba(251, 191, 36, .8); } 100% { box-shadow: inset 0 0 0 40px rgba(255, 255, 255, 0), inset 0 0 0 6px rgba(251, 191, 36, 0); } }
 @keyframes fxRise { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 18% { opacity: 1; transform: translateY(-20px) scale(1.15); } 100% { opacity: 0; transform: translateY(-110px) scale(1); } }
 @keyframes fxBig { 0% { opacity: 0; transform: scale(.3) rotate(-18deg); } 25% { opacity: 1; transform: translateY(-30px) scale(1.25) rotate(5deg); } 70% { opacity: 1; transform: translateY(-60px) scale(1.05); } 100% { opacity: 0; transform: translateY(-120px) scale(1); } }
+
+/* ---------- Bán tài sản trên bàn cờ ---------- */
+/* Ghim hiện số tiền bán được; ô đã chọn chuyển sang ghim xanh có dấu ✔ và viền đỏ "sẽ bán" */
+.pin.pin-sell {
+  width: auto;
+  height: auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  white-space: nowrap;
+  font-family: var(--font-display);
+}
+.pin.pin-sell.on {
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #86efac, #16a34a 60%, #15803d);
+  box-shadow: 0 0 0 3px #fff, 0 0 18px 6px rgba(34, 197, 94, .75), 0 6px 12px rgba(0, 0, 0, .3);
+  animation: none;
+}
+.view-2d .pin.pin-sell { width: auto; height: auto; font-size: 11px; padding: 3px 7px; }
+.board.selecting .tile.selectable.picked { animation: pickedGlow 1.2s ease-in-out infinite; }
+.board.selecting .tile.selectable.picked .tile-face { filter: saturate(.6) brightness(.95); }
+@keyframes pickedGlow {
+  0%, 100% { box-shadow: 0 0 0 4px #22c55e, 0 0 16px 4px rgba(34, 197, 94, .7); }
+  50% { box-shadow: 0 0 0 5px #16a34a, 0 0 26px 8px rgba(34, 197, 94, .9); }
+}

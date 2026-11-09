@@ -3,7 +3,7 @@
  */
 import {
   RESORT_PRICE, RESORT_RENTS, SELL_RATE, BUYOUT_RATE, FESTIVAL_MULTS, INFLATION_START, INFLATION_STEP, MONOPOLY_MULT, COUPON_RATE,
-  BUILD_CAP_BY_LAP,
+  BUILD_CAP_BY_LAP, STREET_FEST_MULT,
 } from '../config.js';
 import { TILES, PROP_TILES, CITY_TILES, RESORT_TILES, GROUP_TILES, GROUPS, SIDE_TILES, SIDE_NAMES } from '../data/board.js';
 import { r5 } from '../core/util.js';
@@ -58,12 +58,22 @@ export function hasMonopoly(i) {
   return t.type === 'city' && !!pr && pr.owner != null && groupComplete(t.group, pr.owner);
 }
 
+/** Thành phố i đang có Lễ Hội Đường Phố (sự kiện ngẫu nhiên) */
+export const isStreetFest = (i) => !!st().street && st().street.tile === i && TILES[i].type === 'city';
+
+/** Hệ số lễ hội của ô i: Lễ Hội Thế Giới (do người chơi tổ chức) được ưu tiên, nếu không thì Lễ Hội Đường Phố */
+export function festMult(i) {
+  if (TILES[i].type !== 'city') return 1;
+  if (st().festival.tile === i) return st().festival.mult;
+  return isStreetFest(i) ? STREET_FEST_MULT : 1;
+}
+
 /** Tiền thuê = thuê theo cấp x độc quyền màu (x2) x Lễ Hội x lạm phát; Mất Điện thì bằng 0 */
 export function rentOf(i) {
   if (isOutage(i)) return 0;
   let r = baseRent(i);
   if (hasMonopoly(i)) r *= MONOPOLY_MULT;
-  if (TILES[i].type === 'city' && st().festival.tile === i) r *= st().festival.mult;
+  r *= festMult(i);
   return r5(r * inflation());
 }
 
