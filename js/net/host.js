@@ -439,12 +439,21 @@ function bindPlayer(conn, entry, pid) {
   delete p.afk;
   send(conn, { t: 'welcome', code: room.code, token: store.state.secrets.tokens[pid], seat: pid });
   send(conn, { t: 'start', myId: pid, state: publicState(true) });
+  // Người chơi nối lại khi đang có câu hỏi chờ trả lời (gửi qua kết nối cũ): gửi lại để họ thao tác được ngay
+  resendPending(conn, pid);
   if (wasOff && store.state.status === 'playing') {
     log(`🔌 ${pn(p)} đã kết nối lại.`, 'good');
     view.toast(`🔌 ${esc(p.name)} đã quay lại!`, 'good');
   }
   Sound.play('join');
   view.sync();
+}
+
+/** Gửi lại các câu hỏi đang chờ người chơi pid trả lời, kèm thời gian còn lại */
+function resendPending(conn, pid) {
+  room.pending.forEach((pend) => {
+    if (pend.pid === pid && pend.msg) send(conn, { ...pend.msg, ms: Math.max(1000, pend.deadline - Date.now()) });
+  });
 }
 
 function otherConnFor(key, value, except) {
@@ -556,8 +565,10 @@ async function askRemote(p, kind, d) {
   }
   const id = ++room.promptSeq;
   const ms = timeoutFor(kind);
+  const msg = { t: 'prompt', id, kind, data: d, ms };
+  const deadline = Date.now() + ms;
   flushSnapshot();
-  send(connOf(p.id), { t: 'prompt', id, kind, data: d, ms });
+  send(connOf(p.id), msg);
   view.timer(p.id, ms);
   let result;
   try {
@@ -568,7 +579,7 @@ async function askRemote(p, kind, d) {
         if (room) room.pending.delete(id);
         done(r);
       };
-      room.pending.set(id, { pid: p.id, finish });
+      room.pending.set(id, { pid: p.id, finish, msg, deadline });
     });
   } finally {
     view.timer(null, 0);

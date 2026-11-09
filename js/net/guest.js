@@ -60,6 +60,7 @@ export async function joinRoom(code, profile) {
     myId: null,
     inGame: false,
     promptId: null,
+    answers: new Map(), // câu hỏi đã trả lời (id → lựa chọn): nhận lại câu hỏi trùng thì gửi lại câu trả lời
     last: Date.now(),
     leaving: false,
     reconnecting: false,
@@ -284,12 +285,22 @@ async function handlePrompt(msg) {
   const me = store.state.players[client.myId];
   const d = cleanPromptData(msg.kind, msg.data);
   if (!me || !d) return;
-  if (client.promptId != null) cancelPrompt();
   const id = msg.id;
+  // Câu hỏi trùng (gửi lại sau khi nối lại): đang hiện thì giữ nguyên; đã trả lời thì gửi lại câu trả lời
+  if (id === client.promptId) return;
+  if (client.answers.has(id)) {
+    send({ t: 'answer', id, value: client.answers.get(id) });
+    return;
+  }
+  if (client.promptId != null) cancelPrompt();
   client.promptId = id;
   try {
     const value = await localAsk(me, msg.kind, d);
-    if (client && client.promptId === id && value !== undefined) send({ t: 'answer', id, value });
+    if (client && client.promptId === id && value !== undefined) {
+      client.answers.set(id, value);
+      if (client.answers.size > 30) client.answers.delete(client.answers.keys().next().value);
+      send({ t: 'answer', id, value });
+    }
   } catch (e) {
     /* lời nhắc bị hủy */
   } finally {
