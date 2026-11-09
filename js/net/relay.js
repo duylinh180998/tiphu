@@ -16,6 +16,10 @@
  *
  * Kết nối trả về có cùng giao diện với DataConnection của PeerJS (on/send/close/open) nên
  * module chủ phòng và khách dùng chung một logic cho cả hai đường truyền.
+ *
+ * Máy chủ MQTT công cộng không bảo đảm giao tin (QoS 0, có lúc rớt/kết nối lại), nên mỗi
+ * kết nối chạy thêm lớp TRUYỀN TIN CẬY (ReliableChannel): đánh số từng tin, bên nhận báo đã nhận,
+ * tin chưa được báo nhận tự gửi lại, bên nhận sắp xếp đúng thứ tự và bỏ tin trùng.
  */
 import { NET_PROTOCOL, RELAY_BROKERS, RELAY_TOPIC, MQTT_URLS } from '../config.js';
 
@@ -36,6 +40,103 @@ class Emitter {
 
   emit(type, ...args) {
     (this.handlers[type] || []).slice().forEach((fn) => fn(...args));
+  }
+}
+
+/**
+ * Lớp truyền tin cậy trên một đường truyền có thể mất tin / đến sai thứ tự.
+ * Gói gửi đi: { s: số thứ tự, d: [các tin], a: đã nhận liên tục tới số này } hoặc chỉ { a } (báo nhận).
+ * Các tin phát sinh gần như cùng lúc được gom chung một gói để giảm số tin gửi qua máy chủ công cộng
+ * (máy chủ công cộng giới hạn số tin mỗi giây).
+ */
+const BATCH_MS = 30; // gom tin trong khoảng này thành một gói
+const BATCH_MAX = 40; // số tin tối đa trong một gói
+const RESEND_MS = 900; // tin chưa được báo nhận sau chừng này thì gửi lại
+const MAX_UNACKED = 600; // quá nhiều tin không được báo nhận: coi như mất kết nối
+
+class ReliableChannel {
+  constructor(rawSend, deliver, onDead) {
+    this.rawSend = rawSend;
+    this.deliver = deliver;
+    this.onDead = onDead;
+    this.sent = 0;
+    this.unacked = new Map(); // số thứ tự → { d, at }
+    this.next = 1; // số thứ tự đang chờ nhận tiếp theo
+    this.early = new Map(); // tin đến sớm (sai thứ tự) chờ giao
+    this.ackTimer = null;
+    this.outbox = [];
+    this.flushTimer = null;
+    this.timer = setInterval(() => this.resend(), 450);
+  }
+
+  get acked() {
+    return this.next - 1;
+  }
+
+  send(d) {
+    this.outbox.push(d);
+    if (this.outbox.length >= BATCH_MAX) this.flush();
+    else if (!this.flushTimer) this.flushTimer = setTimeout(() => this.flush(), BATCH_MS);
+  }
+
+  /** Đóng gói các tin đang chờ thành một gói đánh số */
+  flush() {
+    clearTimeout(this.flushTimer);
+    this.flushTimer = null;
+    if (!this.outbox.length) return;
+    const d = this.outbox;
+    this.outbox = [];
+    const s = ++this.sent;
+    this.unacked.set(s, { d, at: Date.now() });
+    if (this.unacked.size > MAX_UNACKED) {
+      this.onDead();
+      return;
+    }
+    this.rawSend({ s, d, a: this.acked });
+  }
+
+  /** Gói nhận được từ đường truyền: xử lý báo nhận, xếp thứ tự, giao dữ liệu, rồi báo nhận lại */
+  receive(pkt) {
+    if (Number.isInteger(pkt.a)) {
+      for (const s of this.unacked.keys()) {
+        if (s > pkt.a) break;
+        this.unacked.delete(s);
+      }
+    }
+    if (!Number.isInteger(pkt.s)) return;
+    if (pkt.s >= this.next && !this.early.has(pkt.s)) this.early.set(pkt.s, pkt.d);
+    while (this.early.has(this.next)) {
+      const d = this.early.get(this.next);
+      this.early.delete(this.next);
+      this.next++;
+      (Array.isArray(d) ? d : [d]).forEach((m) => this.deliver(m));
+    }
+    this.scheduleAck();
+  }
+
+  scheduleAck() {
+    if (this.ackTimer) return;
+    this.ackTimer = setTimeout(() => {
+      this.ackTimer = null;
+      this.rawSend({ a: this.acked });
+    }, 60);
+  }
+
+  resend(force = false) {
+    const now = Date.now();
+    let n = 0;
+    for (const [s, u] of this.unacked) {
+      if (!force && now - u.at < RESEND_MS) continue;
+      u.at = now;
+      this.rawSend({ s, d: u.d, a: this.acked });
+      if (++n >= 60) break;
+    }
+  }
+
+  stop() {
+    clearInterval(this.timer);
+    clearTimeout(this.ackTimer);
+    clearTimeout(this.flushTimer);
   }
 }
 
@@ -155,22 +256,23 @@ class Broker {
 
 /** Kết nối ảo phía chủ phòng tới một khách — cùng giao diện DataConnection của PeerJS */
 class RelayConnection extends Emitter {
-  constructor(peer, sendFn, onClose) {
+  constructor(peer, rawSend, onClose) {
     super();
     this.peer = peer;
     this.open = true;
     this.relay = true;
-    this.sendFn = sendFn;
     this.onClose = onClose;
+    this.channel = new ReliableChannel(rawSend, (d) => this.emit('data', d), () => this.close());
   }
 
   send(data) {
-    if (this.open) this.sendFn(data);
+    if (this.open) this.channel.send(data);
   }
 
   close() {
     if (!this.open) return;
     this.open = false;
+    this.channel.stop();
     if (this.onClose) this.onClose();
     this.emit('close');
   }
@@ -253,11 +355,12 @@ export class RelayHub extends Emitter {
       return;
     }
     if (!link) {
-      // Chỉ lời chào mới mở kết nối mới
-      if (!msg.data || msg.data.t !== 'hello') return;
+      // Chỉ lời chào (tin số 1) mới mở kết nối mới
+      const first = Array.isArray(msg.d) ? msg.d[0] : msg.d;
+      if (msg.s !== 1 || !first || first.t !== 'hello') return;
       const conn = new RelayConnection(
         id,
-        (data) => broker.publish(this.topics.peer(id), { data }),
+        (pkt) => broker.publish(this.topics.peer(id), pkt),
         () => this.links.delete(id)
       );
       link = { conn, broker };
@@ -267,7 +370,7 @@ export class RelayHub extends Emitter {
       // Bản trùng của cùng tin nhắn đi qua máy chủ khác
       return;
     }
-    link.conn.emit('data', msg.data);
+    if (link.conn.open) link.conn.channel.receive(msg);
   }
 
   stop() {
@@ -292,7 +395,14 @@ export class RelayLink extends Emitter {
     this.topics = topicsFor(code);
     this.brokers = [];
     this.locked = null; // máy chủ đã chọn (nơi chủ phòng trả lời đầu tiên)
-    this.pending = null; // lời chào chờ gửi tới các máy chủ nối muộn
+    this.channel = new ReliableChannel((pkt) => this.publish(pkt), (d) => this.emit('data', d), () => this.close());
+  }
+
+  /** Gửi một gói: đã chọn máy chủ thì gửi qua đó, chưa thì gửi qua mọi máy chủ đang nối */
+  publish(pkt) {
+    const msg = { from: this.id, ...pkt };
+    if (this.locked) this.locked.publish(this.topics.host, msg);
+    else this.brokers.forEach((b) => b.publish(this.topics.host, msg));
   }
 
   async start() {
@@ -305,8 +415,9 @@ export class RelayLink extends Emitter {
           will,
           subscribe: [this.topics.peer(this.id), this.topics.all],
           onMessage: (broker, topic, payload) => this.onMessage(broker, topic, payload),
-          onConnect: (broker) => {
-            if (!this.locked && this.pending) broker.publish(this.topics.host, { from: this.id, data: this.pending });
+          // Máy chủ nối muộn: gửi ngay các tin chưa được báo nhận (ví dụ lời chào)
+          onConnect: () => {
+            if (!this.locked) this.channel.resend(true);
           },
         })
       );
@@ -314,15 +425,7 @@ export class RelayLink extends Emitter {
   }
 
   send(data) {
-    if (!this.open) return;
-    const msg = { from: this.id, data };
-    if (this.locked) {
-      this.locked.publish(this.topics.host, msg);
-      return;
-    }
-    // Chưa chọn máy chủ: gửi qua mọi máy chủ đã nối (và cả máy chủ nối muộn)
-    this.pending = data;
-    this.brokers.forEach((b) => b.publish(this.topics.host, msg));
+    if (this.open) this.channel.send(data);
   }
 
   onMessage(broker, topic, payload) {
@@ -336,7 +439,6 @@ export class RelayLink extends Emitter {
     if (topic !== this.topics.peer(this.id)) return;
     if (!this.locked) {
       this.locked = broker;
-      this.pending = null;
       this.brokers.forEach((b) => {
         if (b !== broker) b.end();
       });
@@ -344,12 +446,13 @@ export class RelayLink extends Emitter {
     } else if (broker !== this.locked) {
       return;
     }
-    this.emit('data', msg.data);
+    this.channel.receive(msg);
   }
 
   close() {
     if (!this.open) return;
     this.open = false;
+    this.channel.stop();
     this.brokers.forEach((b) => b.end());
     this.brokers = [];
     this.emit('close');

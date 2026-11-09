@@ -6,8 +6,9 @@
  */
 import {
   NET_PROTOCOL, PLAYER_COLORS, AVATARS, BOT_NAMES, DISCONNECT_GRACE_MS, HEARTBEAT_MS, HEARTBEAT_TIMEOUT_MS, EMOTES,
-  DEFAULT_ROUNDS, RELAY_TIMEOUT_MS,
+  DEFAULT_ROUNDS, RELAY_TIMEOUT_MS, CHAT_INTERVAL_MS,
 } from '../config.js';
+import { cleanChatText } from '../ui/chat.js';
 import { store } from '../core/store.js';
 import { sleep, humanWait, resetSession } from '../core/session.js';
 import { randomToken, esc } from '../core/util.js';
@@ -41,6 +42,7 @@ function newRoom({ peer, code, hub }) {
     sinkOff: null,
     hb: null,
     emoteAt: {},
+    chatAt: {},
   };
 }
 
@@ -343,6 +345,9 @@ function onData(conn, msg) {
     case 'emote':
       onEmote(entry, msg);
       break;
+    case 'chat':
+      onChat(entry, msg);
+      break;
     case 'leave':
       try {
         conn.close();
@@ -434,12 +439,21 @@ function bindPlayer(conn, entry, pid) {
   delete p.afk;
   send(conn, { t: 'welcome', code: room.code, token: store.state.secrets.tokens[pid], seat: pid });
   send(conn, { t: 'start', myId: pid, state: publicState(true) });
+  // Người chơi nối lại khi đang có câu hỏi chờ trả lời (gửi qua kết nối cũ): gửi lại để họ thao tác được ngay
+  resendPending(conn, pid);
   if (wasOff && store.state.status === 'playing') {
     log(`🔌 ${pn(p)} đã kết nối lại.`, 'good');
     view.toast(`🔌 ${esc(p.name)} đã quay lại!`, 'good');
   }
   Sound.play('join');
   view.sync();
+}
+
+/** Gửi lại các câu hỏi đang chờ người chơi pid trả lời, kèm thời gian còn lại */
+function resendPending(conn, pid) {
+  room.pending.forEach((pend) => {
+    if (pend.pid === pid && pend.msg) send(conn, { ...pend.msg, ms: Math.max(1000, pend.deadline - Date.now()) });
+  });
 }
 
 function otherConnFor(key, value, except) {
@@ -501,6 +515,23 @@ function onEmote(entry, msg) {
   view.emote(entry.pid, msg.e);
 }
 
+/** Tin nhắn trò chuyện của khách: kiểm tra độ dài, chống gửi dồn dập rồi phát cho mọi người */
+function onChat(entry, msg) {
+  if (!room.started || entry.pid == null) return;
+  const text = cleanChatText(msg.text);
+  if (!text) return;
+  const now = Date.now();
+  if (now - (room.chatAt[entry.pid] || 0) < CHAT_INTERVAL_MS) return;
+  room.chatAt[entry.pid] = now;
+  view.chat(entry.pid, text);
+}
+
+/** Chủ phòng gửi tin nhắn của chính mình */
+export function hostChat(text) {
+  const clean = cleanChatText(text);
+  if (room && room.started && clean) view.chat(store.myId, clean);
+}
+
 /** Chủ phòng gửi biểu cảm của chính mình */
 export function hostEmote(emoji) {
   if (room && room.started && EMOTES.includes(emoji)) view.emote(store.myId, emoji);
@@ -534,8 +565,10 @@ async function askRemote(p, kind, d) {
   }
   const id = ++room.promptSeq;
   const ms = timeoutFor(kind);
+  const msg = { t: 'prompt', id, kind, data: d, ms };
+  const deadline = Date.now() + ms;
   flushSnapshot();
-  send(connOf(p.id), { t: 'prompt', id, kind, data: d, ms });
+  send(connOf(p.id), msg);
   view.timer(p.id, ms);
   let result;
   try {
@@ -546,7 +579,7 @@ async function askRemote(p, kind, d) {
         if (room) room.pending.delete(id);
         done(r);
       };
-      room.pending.set(id, { pid: p.id, finish });
+      room.pending.set(id, { pid: p.id, finish, msg, deadline });
     });
   } finally {
     view.timer(null, 0);

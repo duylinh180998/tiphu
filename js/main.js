@@ -21,6 +21,7 @@ import { cancelPrompt } from './ui/prompt.js';
 import { view, renderFromState } from './ui/view.js';
 import { toast } from './ui/fx.js';
 import { Sound } from './ui/audio.js';
+import { initChat, toggleChat, resetChat } from './ui/chat.js';
 import { updateLayout } from './ui/layout.js';
 import { initScreens, showMenu, hideScreens, renderLobby, showOnline, setOnlineMessage } from './ui/screens.js';
 import * as host from './net/host.js';
@@ -137,6 +138,7 @@ function startOnline() {
 function leaveOnlineSilently() {
   if (host.isHosting()) host.closeRoom();
   if (guest.isGuest()) guest.leaveRoom();
+  resetChat();
 }
 
 async function leaveOnline({ ask = true } = {}) {
@@ -171,7 +173,10 @@ function updateToolbar() {
   $('#tb-speed .tb-label').textContent = S().label;
   $('#tb-view .tb-ico').textContent = document.body.classList.contains('view-3d') ? '🧊' : '▦';
   $('#tb-view .tb-label').textContent = document.body.classList.contains('view-3d') ? '3D' : '2D';
-  $('#tb-emote').classList.toggle('hidden', !(online() && document.body.classList.contains('in-game')));
+  const onlineGame = online() && document.body.classList.contains('in-game');
+  $('#tb-emote').classList.toggle('hidden', !onlineGame);
+  $('#tb-chat').classList.toggle('hidden', !onlineGame);
+  if (!onlineGame) toggleChat(false);
   const root = document.documentElement.style;
   const sp = S();
   root.setProperty('--step-ms', `${sp.step}ms`);
@@ -183,6 +188,11 @@ function toggleEmotePicker(force) {
   const picker = $('#emote-picker');
   const show = force != null ? force : picker.classList.contains('hidden');
   picker.classList.toggle('hidden', !show);
+}
+
+function sendChat(text) {
+  if (host.isHosting()) host.hostChat(text);
+  else if (guest.isGuest()) guest.sendChat(text);
 }
 
 function sendEmote(e) {
@@ -226,6 +236,11 @@ function bindToolbar() {
   $('#tb-log').addEventListener('click', logModal);
   $('#tb-rules').addEventListener('click', rulesModal);
   $('#tb-emote').addEventListener('click', () => toggleEmotePicker());
+  $('#tb-chat').addEventListener('click', () => {
+    toggleEmotePicker(false);
+    toggleChat();
+  });
+  initChat(sendChat);
   $('#tb-menu').addEventListener('click', () => {
     Sound.play('click');
     if (online()) leaveOnline();
@@ -275,6 +290,7 @@ function bindKeyboard() {
     } else if (e.key === 'Escape') {
       hideTooltip();
       toggleEmotePicker(false);
+      toggleChat(false);
     }
   });
   document.addEventListener('click', (e) => {
@@ -299,6 +315,7 @@ function bindBus() {
   });
   onBus('net:closed', (msg) => {
     stopGame();
+    resetChat();
     document.body.classList.remove('in-game', 'is-online');
     $('#net-banner').classList.add('hidden');
     updateToolbar();
