@@ -93,6 +93,7 @@ export function startNewGame(cfg) {
   st().current = first;
   log(`🎯 Bốc thăm: ${pn(st().players[first])} được đi trước!`, 'good');
   view.toast(`🎯 Bốc thăm: ${esc(st().players[first].avatar)} ${esc(st().players[first].name)} đi trước!`, 'gold', 3200);
+  tickStreetFest(); // Lễ Hội Đường Phố khai mạc ngay tại một thành phố ngẫu nhiên
   saveGame();
 }
 

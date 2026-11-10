@@ -10,7 +10,7 @@ import { store } from '../core/store.js';
 import { esc, fmt } from '../core/util.js';
 import { rentOf, hasMonopoly, isOutage, isStreetFest } from '../game/rules.js';
 import { dom, el } from './dom.js';
-import { cityModel, resortModel, billboard } from './models.js';
+import { cityModel, resortModel, billboard, festivalGate } from './models.js';
 
 /** Kích thước bàn cờ (px cục bộ, trước khi thu phóng) */
 export const GEO = { C: 150, E: 100, GAP: 5, PAD: 12 };
@@ -112,6 +112,19 @@ export function renderTiles() {
       if (box.dataset.v !== tags) {
         box.dataset.v = tags;
         box.innerHTML = tags;
+      }
+      // Cổng lễ hội dựng trên ô (chỉ thấy ở góc nhìn 3D)
+      const gateKey = fest ? `w${s.festival.mult}` : street ? 's' : '';
+      let gate = e.querySelector(':scope > .fest-gate');
+      if (gate && gate.dataset.k !== gateKey) {
+        gate.remove();
+        gate = null;
+      }
+      if (gateKey && !gate) {
+        gate = el('div', 'fest-gate');
+        gate.dataset.k = gateKey;
+        gate.innerHTML = fest ? festivalGate('world', `LỄ HỘI x${s.festival.mult}`) : festivalGate('street', 'LỄ HỘI');
+        e.appendChild(gate);
       }
     }
   });
