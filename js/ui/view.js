@@ -17,6 +17,7 @@ import { banner, toast, tileFx } from './fx.js';
 import { Sound } from './audio.js';
 import { chanceDialog, gameOverDialog, bankruptNotice } from './dialogs.js';
 import { addChatMessage, cleanChatText } from './chat.js';
+import { renderCashStacks, cashFly } from './cash.js';
 
 const sinks = new Set();
 export function addViewSink(fn) {
@@ -30,6 +31,7 @@ function renderAll() {
   renderPlayers();
   renderPills();
   layoutTokens();
+  renderCashStacks();
 }
 
 /** Thẻ Cơ Hội hiện tự động ở mọi màn hình, trừ màn hình của chính người rút (họ thấy thẻ có nút OK) */
@@ -99,6 +101,11 @@ export const view = {
   moneyFx(pid, delta) {
     emit({ t: 'money', pid, delta });
     playerMoneyFx(pid, delta);
+  },
+  /** Tiền bay: from → giữa bàn cờ → to (null = ngân hàng) */
+  cash(from, to, amount) {
+    emit({ t: 'cash', from, to, amount });
+    cashFly(from, to, amount);
   },
   pulse(i) {
     emit({ t: 'pulse', i });
@@ -194,6 +201,9 @@ export function applyEvent(ev) {
       break;
     case 'money':
       if (validPid(ev.pid) && Number.isFinite(ev.delta)) playerMoneyFx(ev.pid, ev.delta);
+      break;
+    case 'cash':
+      if ((ev.from == null || validPid(ev.from)) && (ev.to == null || validPid(ev.to)) && Number.isFinite(ev.amount)) cashFly(ev.from == null ? null : ev.from, ev.to == null ? null : ev.to, ev.amount);
       break;
     case 'pulse':
       if (validTile(ev.i) && S().fx) pulseTile(ev.i);

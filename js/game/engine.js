@@ -330,6 +330,7 @@ function passStart(p) {
   p.laps++;
   p.money += START_SALARY;
   view.moneyFx(p.id, START_SALARY);
+  view.cash(null, p.id, START_SALARY);
   view.sound('coin');
   view.tileFx(START_TILE, `+${fmt(START_SALARY)}`, 'gain');
   log(`🏁 ${pn(p)} đi qua BẮT ĐẦU, nhận ${fmtFull(START_SALARY)}.`, 'good');
@@ -358,7 +359,7 @@ async function sendToIsland(p) {
 // Tiền & phá sản
 // ===================================================================
 /** Trả tiền mua đất / xây nhà / mua đứt; tự dùng thẻ Giảm Giá nếu đang giữ. Trả về số tiền thực trả. */
-function spendOnProperty(p, baseCost) {
+function spendOnProperty(p, baseCost, to = null) {
   const cost = discounted(p, baseCost);
   if (cost < baseCost) {
     p.coupon--;
@@ -366,6 +367,7 @@ function spendOnProperty(p, baseCost) {
   }
   p.money -= cost;
   view.moneyFx(p.id, -cost);
+  view.cash(p.id, to ? to.id : null, cost);
   return cost;
 }
 
@@ -386,6 +388,7 @@ async function pay(from, amount, to = null) {
     to.money += amt;
     view.moneyFx(to.id, amt);
   }
+  view.cash(from.id, to ? to.id : null, amt);
   view.sound('pay');
   view.sync();
   return true;
@@ -428,6 +431,7 @@ function sellProperty(p, i) {
   resetProperty(i);
   p.money += v;
   view.moneyFx(p.id, v);
+  view.cash(null, p.id, v);
   log(`💱 ${pn(p)} bán ${tn(i)} cho ngân hàng, nhận ${fmtFull(v)}.`, 'bad');
   view.sound('cash');
   view.tileFx(i, '💱', 'loss');
@@ -449,6 +453,7 @@ async function goBankrupt(p, creditor) {
   if (creditor && !creditor.bankrupt && total > 0) {
     creditor.money += total;
     view.moneyFx(creditor.id, total);
+    view.cash(p.id, creditor.id, total);
   }
   log(`💀 ${pn(p)} PHÁ SẢN!${creditor ? ` Toàn bộ ${fmtFull(total)} còn lại thuộc về ${pn(creditor)}.` : ''}`, 'bad');
   view.sound('bankrupt');
@@ -660,7 +665,7 @@ async function offerBuyout(p, i) {
   }
   const yes = await ask(p, 'buyout', { i, cost });
   if (!yes) return;
-  const paid = spendOnProperty(p, full);
+  const paid = spendOnProperty(p, full, owner);
   owner.money += paid;
   view.moneyFx(owner.id, paid);
   pr.owner = p.id;
@@ -691,6 +696,7 @@ async function onResort(p, i) {
     pr.owner = p.id;
     pr.level = 1;
     view.moneyFx(p.id, -RESORT_PRICE);
+    view.cash(p.id, null, RESORT_PRICE);
     log(`🏖️ ${pn(p)} mua Khu Nghỉ Dưỡng ${tn(i)} (${fmtFull(RESORT_PRICE)}) — đang có ${resortCount(p.id)}/4 khu.`, 'buy');
     view.sound('buy');
     view.tileFx(i, '🏖️', 'build');
@@ -933,6 +939,7 @@ async function cardEvict(p) {
   resetProperty(target);
   owner.money += v;
   view.moneyFx(owner.id, v);
+  view.cash(null, owner.id, v);
   log(`📜 ${pn(p)} cưỡng chế bán ${tn(target)} của ${pn(owner)}! ${pn(owner)} nhận lại ${fmtFull(v)}.`, 'buyout');
   view.sound('buyout');
   view.tileFx(target, '📜', 'big');
