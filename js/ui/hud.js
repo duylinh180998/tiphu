@@ -138,10 +138,9 @@ export function renderPills() {
   const f = s && s.festival;
   dom.festPill.classList.toggle('hidden', !(f && f.tile != null));
   if (f && f.tile != null) dom.festPill.textContent = `🎉 ${TILES[f.tile].name} x${f.mult}`;
-  const sf = s && s.street;
-  const showStreet = !!(sf && sf.tile != null);
-  dom.streetPill.classList.toggle('hidden', !showStreet);
-  if (showStreet) dom.streetPill.textContent = `🎊 ${TILES[sf.tile].name} x${STREET_FEST_MULT} · còn ${sf.left} vòng`;
+  const st = s && s.street && Array.isArray(s.street.tiles) ? s.street.tiles : [];
+  dom.streetPill.classList.toggle('hidden', !st.length);
+  if (st.length) dom.streetPill.textContent = st.length <= 2 ? `🎊 ${st.map((i) => TILES[i].name).join(', ')} x${STREET_FEST_MULT}` : `🎊 ${st.length} lễ hội đường phố x${STREET_FEST_MULT}`;
   const pct = s ? inflationPct() : 0;
   dom.inflPill.classList.toggle('hidden', pct <= 0);
   if (pct > 0) dom.inflPill.textContent = `📈 Lạm phát +${pct}%`;

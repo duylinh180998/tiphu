@@ -107,7 +107,7 @@ export function renderTiles() {
       e.classList.toggle('street-fest', street);
       e.classList.toggle('outage', out);
       // Nhãn in phẳng ngay dưới giá thuê của chính ô đó: không bị công trình che, không nhầm ô
-      const tags = (fest ? `<span class="tag tag-fest">🎉 x${s.festival.mult}</span>` : '') + (street ? `<span class="tag tag-street">🎊 x${STREET_FEST_MULT} · ${s.street.left}v</span>` : '') + (out ? `<span class="tag tag-out">🔌 ${pr.outage} vòng</span>` : '');
+      const tags = (fest ? `<span class="tag tag-fest">🎉 x${s.festival.mult}</span>` : '') + (street ? `<span class="tag tag-street">🎊 x${STREET_FEST_MULT}</span>` : '') + (out ? `<span class="tag tag-out">🔌 ${pr.outage} vòng</span>` : '');
       const box = e.querySelector('.tags');
       if (box.dataset.v !== tags) {
         box.dataset.v = tags;

@@ -26,11 +26,11 @@ export const TAX_RATE = 0.1; // 10% tổng tài sản (tiền mặt + bất đ�
 export const SELL_RATE = 0.5;
 export const BUYOUT_RATE = 2;
 export const FESTIVAL_MULTS = [2, 3, 4, 5];
-// Lễ Hội Đường Phố: sự kiện ngẫu nhiên, một thành phố được tổ chức lễ hội (thuê x2) trong 2 vòng
-// rồi chuyển sang thành phố khác. Khai mạc ngay khi bắt đầu ván tại một thành phố ngẫu nhiên.
+// Lễ Hội Đường Phố (thuê x2): khi bắt đầu ván có 2 thành phố ngẫu nhiên tổ chức lễ hội; cứ sau 5 vòng
+// lại thêm 1 thành phố. Lễ hội kéo dài tới khi bị thẻ Cơ Hội "Dẹp Lễ Hội" xóa.
 export const STREET_FEST_MULT = 2;
-export const STREET_FEST_ROUNDS = 2;
-export const STREET_FEST_FIRST = [1, 1];
+export const STREET_FEST_START = 2;
+export const STREET_FEST_EVERY = 5;
 export const MONOPOLY_MULT = 2; // sở hữu trọn nhóm màu: tiền thuê cả nhóm x2
 /**
  * Mở khóa công trình theo số lần đã qua ô Bắt Đầu:
@@ -83,7 +83,7 @@ export const SPEEDS = {
 export const SPEED_ORDER = ['slow', 'normal', 'fast', 'turbo'];
 
 // ---------- Trực tuyến ----------
-export const NET_PROTOCOL = 2; // tăng khi luật hoặc giao thức đổi: máy khác phiên bản bị từ chối kèm lời nhắc tải lại trang
+export const NET_PROTOCOL = 3; // tăng khi luật hoặc giao thức đổi: máy khác phiên bản bị từ chối kèm lời nhắc tải lại trang
 export const ROOM_PREFIX = 'cotyphu-v1-';
 export const ROOM_CODE_LENGTH = 6;
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

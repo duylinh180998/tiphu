@@ -59,7 +59,8 @@ export function hasMonopoly(i) {
 }
 
 /** Thành phố i đang có Lễ Hội Đường Phố (sự kiện ngẫu nhiên) */
-export const isStreetFest = (i) => !!st().street && st().street.tile === i && TILES[i].type === 'city';
+export const streetTiles = () => (st() && st().street && Array.isArray(st().street.tiles) ? st().street.tiles : []);
+export const isStreetFest = (i) => TILES[i].type === 'city' && streetTiles().includes(i);
 
 /** Hệ số lễ hội của ô i: Lễ Hội Thế Giới (do người chơi tổ chức) được ưu tiên, nếu không thì Lễ Hội Đường Phố */
 export function festMult(i) {

@@ -77,7 +77,7 @@ export function deedHTML(i) {
     .join('');
   let notes = store.state.festival.tile === i
     ? `<div class="deed-note">🎉 Đang tổ chức Lễ Hội — tiền thuê x${store.state.festival.mult}</div>`
-    : store.state.street && store.state.street.tile === i ? `<div class="deed-note">🎊 Lễ Hội Đường Phố — tiền thuê x2 (còn ${store.state.street.left} vòng)</div>` : '';
+    : festMult(i) > 1 ? '<div class="deed-note">🎊 Lễ Hội Đường Phố — tiền thuê x2</div>' : '';
   if (hasMonopoly(i)) notes += '<div class="deed-note deed-mono">🎨 Chủ sở hữu trọn nhóm màu — tiền thuê x2</div>';
   else notes += '<div class="deed-note deed-tip">🎨 Sở hữu trọn nhóm màu: tiền thuê cả nhóm x2</div>';
   if (isOutage(i)) notes += `<div class="deed-note deed-infl">🔌 Đang mất điện — không thu tiền thuê (còn ${pr.outage} vòng)</div>`;
@@ -217,19 +217,58 @@ export function upgradeDialog(p, i, options, title) {
   return buildPicker(p, i, { options, mode: 'upgrade', title });
 }
 
+/** Mua đứt thành phố của người khác: cùng dạng thẻ như bảng mua đất, các cấp đã xây mang màu của chủ hiện tại */
 export function buyoutDialog(p, i, cost) {
   const t = TILES[i];
-  const owner = P(store.state.props[i].owner);
-  return openModal({
-    prompt: true,
-    icon: '💥',
-    title: `Mua đứt ${esc(t.name)}?`,
-    sub: `Chủ hiện tại: ${pn(owner)} · Tiền mặt của bạn: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${winNote(p, i)}<p>Trả gấp đôi giá trị hiện tại (<b>${fmtFull(cost)}</b>${p.coupon > 0 ? ', đã giảm 50%' : ''}) cho ${pn(owner)} để sở hữu ngay thành phố này.</p><p class="hint">Sau khi mua đứt bạn được nâng cấp tiếp ngay; nếu đang là Khách sạn thì lên thẳng được Biểu Tượng.</p>`,
-    buttons: [
-      { label: 'Thôi', value: false, style: 'ghost' },
-      { label: `💥 Mua đứt ${fmtFull(cost)}`, value: true, style: 'primary' },
-    ],
+  const g = GROUPS[t.group];
+  const pr = store.state.props[i];
+  const owner = P(pr.owner);
+  const canPay = cost <= p.money;
+  const rent = r5(t.eco.rents[pr.level] * festMult(i) * inflation());
+  const cards = [1, 2, 3, 4, 5].map((L) => {
+    const have = L <= pr.level;
+    const note = have ? '' : `<span class="bp-note">${L === pr.level + 1 ? 'Xây thêm sau khi mua' : '&nbsp;'}</span>`;
+    return `<div class="bp-lv ${have ? 'on buy' : 'lock'}${L === LANDMARK ? ' lm' : ''}" data-lv="${L}">
+      ${levelArt(L, have ? owner.color : p.color)}
+      <span class="bp-name">${LEVEL_NAMES[L]}</span>${note}
+      <span class="bp-check">${have ? '✔' : ''}</span>
+    </div>`;
+  }).join('');
+  const fest = festMult(i) > 1 ? ` <span class="bp-tag">🎉 x${festMult(i)}</span>` : '';
+  return humanWait((done) => {
+    const bd = el('div', 'modal-backdrop');
+    const card = el('div', 'modal-card bp-card');
+    card.style.setProperty('--g', g.color);
+    bd.appendChild(card);
+    dom.modalRoot.appendChild(bd);
+    let end = () => {};
+    const finish = (v) => {
+      end();
+      bd.classList.add('closing');
+      setTimeout(() => bd.remove(), 180);
+      done(v);
+    };
+    end = beginPrompt(finish);
+    card.innerHTML = `
+      <div class="bp-head"><div class="bp-title"><span class="bp-group">${esc(g.name)}</span>${esc(t.name)}</div><button type="button" class="bp-x" data-skip aria-label="Thôi">✕</button></div>
+      <div class="bp-sub">💥 Mua đứt từ ${pn(owner)} · Tiền mặt: <b>${fmtFull(p.money)}</b>${p.coupon > 0 ? ' · 🏷️ đã giảm 50%' : ''}</div>
+      <div class="modal-body"><div class="bp-row">${cards}</div>${winNote(p, i)}</div>
+      <div class="bp-foot">
+        <div class="bp-rent">Tiền thuê: <b>${fmtFull(rent)}</b>${fest}</div>
+        <button type="button" class="btn bp-buy bp-buyout" data-buy data-hotkey="1" ${canPay ? '' : 'disabled'}>MUA ĐỨT VỚI GIÁ ${fmtFull(cost)}</button>
+        <div class="bp-resale">Trả gấp đôi giá trị hiện tại cho ${pn(owner)}. Mua xong được nâng cấp tiếp ngay${pr.level === 4 ? ' (lên thẳng Biểu Tượng)' : ''}.</div>
+        <button type="button" class="bp-skip" data-skip>Thôi, không mua</button>
+      </div>`;
+    card.querySelectorAll('[data-skip]').forEach((b) => b.addEventListener('click', () => {
+      Sound.play('click');
+      finish(false);
+    }));
+    card.querySelector('[data-buy]').addEventListener('click', () => {
+      if (!canPay) return;
+      Sound.unlock();
+      Sound.play('click');
+      finish(true);
+    });
   });
 }
 
@@ -402,14 +441,14 @@ const RULES_HTML = `
       <li>🏁 <b>Bắt Đầu</b>: đi qua nhận $300K; dừng đúng ô được nâng 1 thành phố thêm 1 cấp (kể cả lên Biểu Tượng).</li>
       <li>🏝️ <b>Đảo Hoang</b>: kẹt 3 lượt. Thoát bằng đổ đôi (đi luôn, không thêm lượt) hoặc trả $200K; thẻ Thoát Đảo tự dùng. Hết 3 lượt thì lượt sau tự đi.</li>
       <li>🎉 <b>Lễ Hội Thế Giới</b>: chọn 1 thành phố của mình, tiền thuê x2, các lần sau x3, x4, x5. Mỗi lúc chỉ 1 thành phố tổ chức.</li>
-      <li>🎊 <b>Lễ Hội Đường Phố</b> (ngẫu nhiên): ngay khi bắt đầu ván, 1 thành phố ngẫu nhiên được tổ chức lễ hội, tiền thuê <b>x2</b> trong <b>2 vòng</b>, sau đó lễ hội chuyển sang thành phố khác.</li>
+      <li>🎊 <b>Lễ Hội Đường Phố</b>: khi bắt đầu ván có <b>2 thành phố ngẫu nhiên</b> tổ chức lễ hội (tiền thuê <b>x2</b>); cứ sau <b>5 vòng</b> lại thêm 1 thành phố. Lễ hội kéo dài tới khi bị thẻ 🚫 Dẹp Lễ Hội xóa.</li>
       <li>✈️ <b>Chuyến Bay Thế Giới</b>: lượt sau trả $50K để bay tới bất kỳ ô nào.</li>
       <li>🏖️ <b>Khu Nghỉ Dưỡng</b> (4 ô): thuê $50K / $100K / $200K theo số khu sở hữu; đủ 4 khu là thắng.</li>
       <li>💸 <b>Thuế</b>: nộp 10% tổng tài sản (tiền mặt + bất động sản).</li>
     </ul>
     <h4>🎁 Thẻ Cơ Hội</h4>
     <ul>
-      <li>🌋 Động Đất (phá 1 cấp công trình của đối thủ) · 🔌 Mất Điện (1 thành phố không thu thuê 3 vòng) · 📜 Cưỡng Chế Bán.</li>
+      <li>🌋 Động Đất (phá 1 cấp công trình của đối thủ) · 🔌 Mất Điện (1 thành phố không thu thuê 3 vòng) · 🚫 Dẹp Lễ Hội (xóa lễ hội của 1 thành phố) · 📜 Cưỡng Chế Bán.</li>
       <li>🏷️ Giảm Giá 50% · 🛶 Thoát Đảo Hoang · 🎉 Vé Lễ Hội · 🎫 Vé Máy Bay · 🏁 Về Bắt Đầu · 🌊 Đắm Tàu.</li>
     </ul>
     <h4>🆘 Phá sản</h4>

@@ -86,13 +86,14 @@ export const SPECIAL_DESC = {
   island: 'Dừng tại đây bị kẹt <b>3 lượt</b>. Thoát bằng cách đổ xúc xắc đôi (đi luôn nhưng không được thêm lượt) hoặc trả <b>$200K</b>. Thẻ Thoát Đảo tự dùng khi rơi vào đây. Hết 3 lượt thì lượt sau tự đi.',
   festival: 'Chọn 1 thành phố của bạn tổ chức Lễ Hội: tiền thuê <b>x2</b>, các lần tổ chức sau tăng lên <b>x3, x4, x5</b>. Mỗi lúc chỉ 1 thành phố tổ chức Lễ Hội.',
   tour: 'Lượt kế tiếp được trả <b>$50K</b> để bay tới bất kỳ ô nào trên bàn cờ (bay qua Bắt Đầu vẫn nhận lương). Không đủ tiền thì lắc như thường.',
-  chance: 'Rút 1 thẻ Cơ Hội: Động Đất, Mất Điện, Cưỡng Chế Bán, Giảm Giá 50%, Thoát Đảo Hoang, Vé Lễ Hội, Vé Máy Bay, Về Bắt Đầu hoặc Đắm Tàu.',
+  chance: 'Rút 1 thẻ Cơ Hội: Động Đất, Mất Điện, Dẹp Lễ Hội, Cưỡng Chế Bán, Giảm Giá 50%, Thoát Đảo Hoang, Vé Lễ Hội, Vé Máy Bay, Về Bắt Đầu hoặc Đắm Tàu.',
   tax: 'Nộp <b>10% tổng tài sản</b> (tiền mặt + giá trị bất động sản) cho ngân hàng.',
 };
 
 export const CHANCE_CARDS = [
   { id: 'earthquake', icon: '🌋', title: 'Động Đất', text: 'Chọn 1 thành phố của đối thủ để phá hủy 1 cấp công trình (Biểu Tượng cũng bị hạ xuống Khách sạn).', good: true },
   { id: 'outage', icon: '🔌', title: 'Mất Điện', text: 'Chọn 1 thành phố trên bàn cờ: thành phố đó không thu được tiền thuê trong 3 vòng.', good: true },
+  { id: 'nofest', icon: '🚫', title: 'Dẹp Lễ Hội', text: 'Chọn 1 thành phố đang tổ chức lễ hội: lễ hội ở đó bị xóa, tiền thuê trở lại bình thường.', good: true },
   { id: 'evict', icon: '📜', title: 'Cưỡng Chế Bán', text: 'Chọn 1 thành phố của đối thủ (chưa là Biểu Tượng): buộc bán lại cho ngân hàng.', good: true },
   { id: 'coupon', icon: '🏷️', title: 'Giảm Giá 50%', text: 'Giữ thẻ này: lần mua đất, xây nhà hoặc mua đứt tiếp theo chỉ trả một nửa.', good: true },
   { id: 'boat', icon: '🛶', title: 'Thoát Đảo Hoang', text: 'Giữ thẻ này: tự động dùng để rời đi ngay khi rơi vào Đảo Hoang.', good: true },
@@ -102,5 +103,5 @@ export const CHANCE_CARDS = [
   { id: 'shipwreck', icon: '🌊', title: 'Đắm Tàu!', text: 'Bạn trôi dạt thẳng tới Đảo Hoang (không qua Bắt Đầu).', good: false },
 ];
 /** Bộ bài: thẻ chiến thuật có 2 lá, thẻ di chuyển 1 lá */
-export const CHANCE_DECK = ['earthquake', 'earthquake', 'outage', 'outage', 'evict', 'evict', 'coupon', 'coupon', 'boat', 'boat', 'festival', 'ticket', 'home', 'shipwreck'];
+export const CHANCE_DECK = ['earthquake', 'earthquake', 'outage', 'outage', 'nofest', 'nofest', 'evict', 'evict', 'coupon', 'coupon', 'boat', 'boat', 'festival', 'ticket', 'home', 'shipwreck'];
 export const CARD_BY_ID = Object.fromEntries(CHANCE_CARDS.map((c) => [c.id, c]));

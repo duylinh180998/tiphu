@@ -197,7 +197,7 @@ export function tileInfoHTML(i) {
       status = `<div class="tt-line">🏷️ Chưa có chủ — giá từ <b>${fmtFull(t.eco.value[1])}</b></div>`;
     }
     if (s && isStreetFest(i)) {
-      status += `<div class="tt-line">🎊 Lễ Hội Đường Phố: thuê x2, còn ${s.street.left} vòng</div>`;
+      status += `<div class="tt-line">🎊 Lễ Hội Đường Phố: thuê x2 (tới khi bị thẻ Dẹp Lễ Hội xóa)</div>`;
     }
     return `<div class="tt-head" style="--g:${g.color}"><div class="tt-group">${esc(g.name)} <span class="gdots">${groupDots(t.group)}</span></div><div class="tt-name">${esc(t.name)}</div></div>
       ${status}

@@ -100,7 +100,7 @@ Mỗi người bắt đầu với **$2M**. Ván đấu mặc định **30 vòng*
 - 🏁 **Bắt Đầu**: đi qua hoặc dừng lại đều nhận **$300K**. Dừng đúng ô được trả tiền nâng 1 thành phố của mình thêm **1 cấp** (rất hợp để nâng Khách sạn lên Biểu Tượng từ xa).
 - 🏝️ **Đảo Hoang**: kẹt **3 lượt**. Đầu lượt chọn trả **$200K** hoặc lắc tìm **đôi** (ra đôi thì đi luôn nhưng không được thêm lượt). Thẻ Thoát Đảo Hoang tự dùng khi rơi vào đảo. Hết 3 lượt thì lượt sau tự đi, không mất tiền.
 - 🎉 **Lễ Hội Thế Giới**: chọn 1 thành phố của mình tổ chức Lễ Hội — tiền thuê **x2**, các lần tổ chức sau **x3, x4, x5**. Mỗi lúc chỉ có 1 thành phố tổ chức.
-- 🎊 **Lễ Hội Đường Phố** (sự kiện ngẫu nhiên): khai mạc ngay khi bắt đầu ván tại 1 thành phố ngẫu nhiên (các lần sau ưu tiên thành phố đã có chủ) — tiền thuê **x2** trong **2 vòng**, rồi tự chuyển sang thành phố khác. Nếu thành phố đó đang có Lễ Hội Thế Giới thì chỉ tính hệ số Lễ Hội Thế Giới.
+- 🎊 **Lễ Hội Đường Phố**: khi bắt đầu ván có **2 thành phố ngẫu nhiên** tổ chức lễ hội — tiền thuê **x2**; cứ sau **5 vòng** (đầu vòng 6, 11, 16…) lại thêm 1 thành phố ngẫu nhiên. Lễ hội kéo dài tới khi bị thẻ Cơ Hội 🚫 **Dẹp Lễ Hội** xóa. Nếu thành phố đó đang có Lễ Hội Thế Giới thì chỉ tính hệ số Lễ Hội Thế Giới.
 - ✈️ **Chuyến Bay Thế Giới**: lượt kế tiếp trả **$50K** để bay tới bất kỳ ô nào (bay qua Bắt Đầu vẫn nhận lương); không đủ tiền thì lắc như thường.
 - 🏖️ **Khu Nghỉ Dưỡng** (ô 4, 12, 20, 28): giá $200K, không xây nhà; thuê **$50K / $100K / $200K** khi chủ sở hữu 1 / 2 / 3 khu. Đủ 4 khu là **thắng ngay**.
 - 💸 **Thuế** (ô 30): nộp **10% tổng tài sản** (tiền mặt + giá trị bất động sản).
@@ -110,6 +110,7 @@ Mỗi người bắt đầu với **$2M**. Ván đấu mặc định **30 vòng*
 |-----|----------|
 | 🌋 Động Đất | Chọn 1 thành phố của đối thủ, phá 1 cấp công trình (Biểu Tượng bị hạ xuống Khách sạn và mất bảo hộ) |
 | 🔌 Mất Điện | Chọn 1 thành phố: không thu được tiền thuê trong 3 vòng |
+| 🚫 Dẹp Lễ Hội | Chọn 1 thành phố đang có lễ hội (Đường Phố hoặc Thế Giới): xóa lễ hội ở đó |
 | 📜 Cưỡng Chế Bán | Chọn 1 thành phố của đối thủ (chưa là Biểu Tượng): buộc bán lại cho ngân hàng |
 | 🏷️ Giảm Giá 50% | Giữ lại: lần mua đất / xây nhà / mua đứt tiếp theo chỉ trả một nửa |
 | 🛶 Thoát Đảo Hoang | Giữ lại: tự dùng khi rơi vào Đảo Hoang |

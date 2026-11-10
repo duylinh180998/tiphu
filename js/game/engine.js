@@ -4,7 +4,7 @@
  */
 import {
   SAVE_VERSION, TILE_COUNT, START_TILE, ISLAND_TILE, FESTIVAL_TILE, TOUR_TILE, TAX_TILE, START_SALARY, ISLAND_FEE,
-  ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, FESTIVAL_MULTS, STREET_FEST_ROUNDS, STREET_FEST_FIRST, STREET_FEST_MULT, INFLATION_START, INFLATION_STEP, LEVEL_ICONS,
+  ISLAND_TURNS, TOUR_FEE, RESORT_PRICE, TAX_RATE, FESTIVAL_MULTS, STREET_FEST_START, STREET_FEST_EVERY, STREET_FEST_MULT, INFLATION_START, INFLATION_STEP, LEVEL_ICONS,
   LEVEL_NAMES, MAX_LOG, PARITY_USES, OUTAGE_ROUNDS, HOTEL, LANDMARK,
 } from '../config.js';
 import { TILES, CITY_TILES, CHANCE_DECK, CARD_BY_ID } from '../data/board.js';
@@ -14,7 +14,7 @@ import { rand, shuffle } from '../core/rng.js';
 import { fmt, fmtFull, esc } from '../core/util.js';
 import {
   P, isBot, alivePlayers, ownedBy, citiesOf, resortCount, sellValue, buyoutCost, rentOf, netWorth, liquidation,
-  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted, buildCap, unlockLapOf, isStreetFest,
+  nextFestivalMult, winConditionFor, hasMonopoly, isOutage, discounted, buildCap, unlockLapOf, isStreetFest, streetTiles,
 } from './rules.js';
 import { ask } from './players.js';
 import { AI } from './ai.js';
@@ -56,8 +56,7 @@ export function createState(cfg) {
     })),
     props: TILES.map((t) => (t.type === 'city' || t.type === 'resort' ? { owner: null, level: 0, outage: 0 } : null)),
     festival: { tile: null, mult: 1, editions: 0 },
-    // Lễ Hội Đường Phố ngẫu nhiên: tile đang tổ chức, left = số vòng còn lại, next = vòng sẽ bắt đầu
-    street: { tile: null, left: 0, next: STREET_FEST_FIRST[0] + Math.floor(Math.random() * (STREET_FEST_FIRST[1] - STREET_FEST_FIRST[0] + 1)) },
+    street: { tiles: [] }, // các thành phố đang có Lễ Hội Đường Phố (thuê x2)
     current: 0,
     first: 0, // người đi đầu tiên (bốc thăm khi bắt đầu ván); một vòng kết thúc khi lượt quay lại người này
     round: 1,
@@ -93,7 +92,7 @@ export function startNewGame(cfg) {
   st().current = first;
   log(`🎯 Bốc thăm: ${pn(st().players[first])} được đi trước!`, 'good');
   view.toast(`🎯 Bốc thăm: ${esc(st().players[first].avatar)} ${esc(st().players[first].name)} đi trước!`, 'gold', 3200);
-  tickStreetFest(); // Lễ Hội Đường Phố khai mạc ngay tại một thành phố ngẫu nhiên
+  for (let k = 0; k < STREET_FEST_START; k++) addStreetFest(); // 2 thành phố ngẫu nhiên có lễ hội ngay từ đầu
   saveGame();
 }
 
@@ -160,7 +159,7 @@ function nextPlayer() {
     s.round++;
     log(`Vòng ${s.round}`, 'round');
     tickOutages();
-    tickStreetFest();
+    if ((s.round - 1) % STREET_FEST_EVERY === 0) addStreetFest();
     if (s.round === INFLATION_START + 1) {
       const pct = Math.round(INFLATION_STEP * 100);
       log(`📈 Bắt đầu <b>lạm phát</b>: từ vòng này tiền thuê tăng thêm ${pct}% mỗi vòng!`, 'bad');
@@ -177,35 +176,18 @@ function tickOutages() {
   });
 }
 
-/**
- * Đầu mỗi vòng: Lễ Hội Đường Phố xuất hiện (lần đầu ở vòng ngẫu nhiên), mỗi thành phố tổ chức
- * STREET_FEST_ROUNDS vòng rồi chuyển sang thành phố khác. Ưu tiên thành phố đã có chủ để có tác dụng.
- */
-function tickStreetFest() {
+/** Thêm Lễ Hội Đường Phố (thuê x2) tại 1 thành phố ngẫu nhiên chưa có lễ hội; kéo dài tới khi bị thẻ Dẹp Lễ Hội xóa */
+function addStreetFest() {
   const s = st();
-  if (!s.street) s.street = { tile: null, left: 0, next: s.round };
-  const sf = s.street;
-  if (sf.tile != null) {
-    sf.left--;
-    if (sf.left > 0) return;
-  } else if (s.round < sf.next) {
-    return;
-  }
-  const old = sf.tile;
-  const pool = CITY_TILES.filter((i) => i !== old && i !== s.festival.tile);
-  const owned = pool.filter((i) => s.props[i].owner != null);
-  const list = owned.length ? owned : pool;
-  if (!list.length) return;
-  const tile = list[Math.floor(rand() * list.length)];
-  sf.tile = tile;
-  sf.left = STREET_FEST_ROUNDS;
-  const msg = old != null
-    ? `🎊 Lễ Hội Đường Phố chuyển từ ${tn(old)} sang ${tn(tile)} — tiền thuê x${STREET_FEST_MULT} trong ${STREET_FEST_ROUNDS} vòng!`
-    : `🎊 Lễ Hội Đường Phố khai mạc tại ${tn(tile)} — tiền thuê x${STREET_FEST_MULT} trong ${STREET_FEST_ROUNDS} vòng!`;
-  log(msg, 'good');
+  if (!s.street || !Array.isArray(s.street.tiles)) s.street = { tiles: [] };
+  const pool = CITY_TILES.filter((i) => !s.street.tiles.includes(i) && i !== s.festival.tile);
+  if (!pool.length) return;
+  const tile = pool[Math.floor(rand() * pool.length)];
+  s.street.tiles.push(tile);
+  log(`🎊 Lễ Hội Đường Phố khai mạc tại ${tn(tile)} — tiền thuê x${STREET_FEST_MULT}!`, 'good');
   view.sound('festival');
   view.tileFx(tile, `🎊x${STREET_FEST_MULT}`, 'big');
-  view.toast(`🎊 Lễ Hội Đường Phố tại ${esc(TILES[tile].name)} — thuê x${STREET_FEST_MULT} (${STREET_FEST_ROUNDS} vòng)`, 'gold');
+  view.toast(`🎊 Lễ Hội Đường Phố tại ${esc(TILES[tile].name)} — thuê x${STREET_FEST_MULT}`, 'gold');
 }
 
 async function turnIntro(p, bonus) {
@@ -825,6 +807,9 @@ async function applyCard(p, card) {
     case 'outage':
       await cardOutage(p);
       break;
+    case 'nofest':
+      await cardNoFest(p);
+      break;
     case 'evict':
       await cardEvict(p);
       break;
@@ -898,6 +883,37 @@ async function cardOutage(p) {
   log(`🔌 ${pn(p)} cắt điện ${tn(target)} của ${pn(P(st().props[target].owner))} — không thu tiền thuê trong ${OUTAGE_ROUNDS} vòng!`, 'buyout');
   view.sound('buyout');
   view.tileFx(target, '🔌', 'big');
+  view.sync();
+}
+
+/** Thẻ Dẹp Lễ Hội: xóa lễ hội (Đường Phố hoặc Thế Giới) của 1 thành phố */
+async function cardNoFest(p) {
+  const f = st().festival;
+  const cands = [...streetTiles()];
+  if (f.tile != null && !cands.includes(f.tile)) cands.push(f.tile);
+  if (!cands.length) {
+    log('🚫 Không có thành phố nào đang tổ chức lễ hội — thẻ Dẹp Lễ Hội không có tác dụng.');
+    return;
+  }
+  const target = await ask(p, 'select', {
+    purpose: 'nofest',
+    cands,
+    title: '🚫 <b>Dẹp Lễ Hội</b>: chọn 1 thành phố để xóa lễ hội (mất hệ số nhân tiền thuê)',
+    cancelLabel: 'Không dùng',
+  });
+  if (target == null) {
+    log(`🚫 ${pn(p)} không dùng thẻ Dẹp Lễ Hội.`);
+    return;
+  }
+  if (isBot(p)) await view.flash(target);
+  if (f.tile === target) {
+    f.tile = null;
+    f.mult = 1;
+  }
+  st().street.tiles = streetTiles().filter((i) => i !== target);
+  log(`🚫 ${pn(p)} dẹp lễ hội tại ${tn(target)} — tiền thuê trở lại bình thường.`, 'buyout');
+  view.sound('buyout');
+  view.tileFx(target, '🚫', 'big');
   view.sync();
 }
 
