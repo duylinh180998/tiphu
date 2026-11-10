@@ -637,3 +637,36 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
 .bb-tree { font-size: 52px; filter: drop-shadow(0 8px 5px rgba(0, 0, 0, .25)); }
 .bb-flower { font-size: 26px; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .2)); }
 .center-deco { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+
+/* ---------- Chồng tiền của người chơi (cạnh bàn cờ) & tiền bay ---------- */
+.cash-stack { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none; }
+.view-2d .cash-stack { display: none; }
+.bb-cash { display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 0; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, .28)); }
+.cash-svg { display: block; overflow: visible; }
+.cash-tag {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.2;
+  padding: 1px 10px;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--pc) 78%, #000);
+  box-shadow: 0 0 0 2px #fff;
+}
+#cash-layer { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
+.cash-bill { position: absolute; width: calc(34px * var(--ck, 1)); height: calc(20px * var(--ck, 1)); border-radius: 4px; background: linear-gradient(135deg, #86efac, #22c55e); box-shadow: 0 0 0 1.5px #166534, 0 4px 8px rgba(0, 0, 0, .3); opacity: 0; }
+.cash-bill i { position: absolute; left: 50%; top: 50%; width: 40%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: #fef9c3; box-shadow: 0 0 0 1.5px #ca8a04; }
+.cash-amount {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(30px * var(--ck, 1));
+  color: #fff;
+  -webkit-text-stroke: 1.5px #166534;
+  text-shadow: 0 3px 0 #166534, 0 6px 14px rgba(0, 0, 0, .35);
+  animation: cashAmount 1.4s ease-out both;
+}
+@keyframes cashAmount { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.6); } 18% { opacity: 1; transform: translate(-50%, -90%) scale(1.1); } 75% { opacity: 1; transform: translate(-50%, -130%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -170%) scale(.95); } }
