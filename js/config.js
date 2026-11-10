@@ -27,10 +27,10 @@ export const SELL_RATE = 0.5;
 export const BUYOUT_RATE = 2;
 export const FESTIVAL_MULTS = [2, 3, 4, 5];
 // Lễ Hội Đường Phố: sự kiện ngẫu nhiên, một thành phố được tổ chức lễ hội (thuê x2) trong 2 vòng
-// rồi chuyển sang thành phố khác. Lần đầu xuất hiện ngẫu nhiên ở vòng 2..4.
+// rồi chuyển sang thành phố khác. Khai mạc ngay khi bắt đầu ván tại một thành phố ngẫu nhiên.
 export const STREET_FEST_MULT = 2;
 export const STREET_FEST_ROUNDS = 2;
-export const STREET_FEST_FIRST = [2, 4];
+export const STREET_FEST_FIRST = [1, 1];
 export const MONOPOLY_MULT = 2; // sở hữu trọn nhóm màu: tiền thuê cả nhóm x2
 /**
  * Mở khóa công trình theo số lần đã qua ô Bắt Đầu:

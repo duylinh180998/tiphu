@@ -543,3 +543,97 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
   0%, 100% { box-shadow: 0 0 0 4px #22c55e, 0 0 16px 4px rgba(34, 197, 94, .7); }
   50% { box-shadow: 0 0 0 5px #16a34a, 0 0 26px 8px rgba(34, 197, 94, .9); }
 }
+
+/* Cổng lễ hội trên ô có Lễ Hội (đứng quay về camera, phía trước công trình) */
+.fest-gate { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: translateZ(2px); pointer-events: none; z-index: 6; }
+.view-2d .fest-gate { display: none; }
+.bb-gate { line-height: 0; filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .25)); }
+.gate-svg { display: block; overflow: visible; animation: gateSway 3s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes gateSway { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+
+/* =========================================================================
+   Bố cục bàn cờ "thành phố": nền đá sáng, ô màu trắng kem có khu đất lát gạch
+   tô màu nhóm, giữa bàn cờ là bãi cỏ có đường vành đai bao quanh.
+   ========================================================================= */
+.board {
+  background: linear-gradient(145deg, #efeae0, #ddd6c8);
+  box-shadow: 0 0 0 4px #fff, 0 40px 80px rgba(60, 70, 110, .35);
+}
+.view-3d .board::before { background: linear-gradient(#cfc6b3, #a39985); }
+.view-3d .board::after { background: linear-gradient(90deg, #a39985, #cfc6b3); }
+
+.tile { background: linear-gradient(160deg, #ffffff, #f3efe7); box-shadow: inset 0 0 0 1px rgba(30, 33, 72, .08); }
+.view-3d .tile::before { background: #c9c1b1; }
+.view-3d .tile::after { background: #ddd6c8; }
+
+/* Khu đất của thành phố: nền lát gạch màu nhạc của nhóm, viền đậm màu nhóm phía đường */
+.t-city .band {
+  flex-basis: 56px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .55) 0 1.5px, transparent 1.5px 12px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .4) 0 1.5px, transparent 1.5px 18px),
+    color-mix(in srgb, var(--g) 34%, #fff);
+  box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--g) 80%, #fff);
+}
+.view-3d .s1 .t-city .band, .view-3d .s2 .t-city .band, .view-3d .s1.t-city .band, .view-3d .s2.t-city .band { box-shadow: inset 0 5px 0 color-mix(in srgb, var(--g) 80%, #fff); }
+.view-2d .t-city .band { flex-basis: 34px; }
+.t-city .label { min-height: 64px; }
+.tile.owned.t-city .band { background-color: color-mix(in srgb, var(--owner) 30%, #fff); }
+.tile.mono .band { box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--g) 85%, #fff); }
+
+/* Cơ Hội: ô trắng, vòng quay nhiều màu */
+.t-chance, .t-tax { background: linear-gradient(160deg, #ffffff, #f3efe7); color: #1e2148; }
+.t-chance .icon, .t-tax .icon { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .2)); }
+.t-chance .icon {
+  width: calc(46px * var(--fz));
+  height: calc(46px * var(--fz));
+  font-size: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #fff 0 18%, transparent 19%),
+    conic-gradient(#f43f5e 0 45deg, #facc15 0 90deg, #22c55e 0 135deg, #06b6d4 0 180deg, #3b82f6 0 225deg, #a855f7 0 270deg, #ec4899 0 315deg, #f97316 0);
+  box-shadow: 0 0 0 3px #fff, 0 3px 6px rgba(0, 0, 0, .2);
+  animation: wheelSpin 9s linear infinite;
+}
+@keyframes wheelSpin { to { transform: rotate(360deg); } }
+.t-tax .name { color: #be123c; }
+
+/* Ô góc: nền sáng hơn */
+.t-start { background: radial-gradient(circle at 30% 25%, #a7f3d0, #34d399 55%, #059669); }
+.t-island { background: radial-gradient(circle at 65% 30%, #cffafe, #67e8f9 50%, #0891b2); }
+.t-festival { background: radial-gradient(circle at 35% 30%, #fbcfe8, #f472b6 55%, #be185d); }
+.t-tour { background: radial-gradient(circle at 65% 65%, #dbeafe, #93c5fd 50%, #2563eb); }
+
+/* Trung tâm: bãi cỏ sọc + đường vành đai có vạch kẻ đứt */
+#board-center {
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .08) 0 46px, transparent 46px 92px),
+    radial-gradient(circle at 50% 50%, #a6e07a, #86cc5a 70%, #74bd4b);
+  box-shadow: none;
+}
+#board-center::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 40px solid #8b93a1;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 4px #e9e5dc, 0 0 0 3px #e9e5dc;
+  pointer-events: none;
+}
+#board-center::after {
+  content: '';
+  position: absolute;
+  inset: 19px;
+  border: 2px dashed rgba(255, 255, 255, .85);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.floor-logo { color: rgba(255, 255, 255, .42); text-shadow: 0 2px 0 rgba(40, 100, 30, .18); }
+
+/* Cây và hoa trang trí trên bãi cỏ */
+.deco { position: absolute; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none; }
+.view-2d .deco { display: none; }
+.bb-tree { font-size: 52px; filter: drop-shadow(0 8px 5px rgba(0, 0, 0, .25)); }
+.bb-flower { font-size: 26px; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .2)); }
+.center-deco { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }

@@ -4,13 +4,14 @@
  */
 import { humanWait } from '../core/session.js';
 import { store, S } from '../core/store.js';
-import { esc, fmt, fmtFull } from '../core/util.js';
-import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS, LANDMARK } from '../config.js';
+import { esc, fmt, fmtFull, r5 } from '../core/util.js';
+import { LEVEL_ICONS, LEVEL_NAMES, RESORT_PRICE, RESORT_RENTS, LANDMARK, BUYOUT_RATE } from '../config.js';
 import { TILES, GROUPS, CARD_BY_ID } from '../data/board.js';
 import {
   P, isBot, ownedBy, netWorth, completedGroups, resortCount, liquidation, rentOf, criticalTiles,
-  inflationPct, hasMonopoly, isOutage,
+  inflationPct, hasMonopoly, isOutage, festMult, inflation,
 } from '../game/rules.js';
+import { buildingSprite } from './models.js';
 import { pn } from '../game/text.js';
 import { dom, el } from './dom.js';
 import { beginPrompt } from './prompt.js';
@@ -102,47 +103,118 @@ export function resortDeedHTML(i) {
 const winNote = (p, i) => (criticalTiles(p.id).has(i) ? '<div class="win-note">🏆 Sở hữu ô này bạn sẽ <b>CHIẾN THẮNG</b> ngay lập tức!</div>' : '');
 
 // ---------- Hộp thoại quyết định ----------
-export function purchaseDialog(p, i, options, locked = []) {
+
+/** Hình minh họa một cấp công trình: khu đất hình thoi và công trình (màu người chơi) */
+function levelArt(level, color) {
+  const lot = '<svg class="bp-lot" viewBox="0 0 120 70" aria-hidden="true"><polygon points="60,4 116,32 60,60 4,32" class="bp-lot-top"/><polygon points="4,32 60,60 60,68 4,40" class="bp-lot-l"/><polygon points="60,60 116,32 116,40 60,68" class="bp-lot-r"/></svg>';
+  return `<div class="bp-art">${lot}<div class="bp-bld">${buildingSprite(level, color)}</div></div>`;
+}
+
+/**
+ * Bảng chọn công trình dạng thẻ (dùng cho mua đất và nâng cấp):
+ * 5 thẻ Đất nền → Biểu Tượng; cấp đã có đóng dấu "ĐÃ XÂY", cấp chưa mở khóa có ổ khóa.
+ * Nhấn thẻ để chọn xây tới cấp đó (các cấp thấp hơn tự được chọn theo). Trả về cấp đã chọn hoặc 0.
+ */
+function buildPicker(p, i, { options, locked = [], mode, title }) {
   const t = TILES[i];
-  return openModal({
-    prompt: true,
-    icon: '🏗️',
-    title: `Mua đất ${esc(t.name)}`,
-    sub: `${esc(GROUPS[t.group].name)} · Tiền mặt: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${winNote(p, i)}${locked.length ? `<div class="locked-row">${locked.map((o) => `<span class="lock-chip">🔒 ${LEVEL_ICONS[o.level]} ${LEVEL_NAMES[o.level]} · vòng ${o.lap}</span>`).join('')}</div>` : ''}<p class="hint">Biểu Tượng 🗼: cần có Khách sạn rồi dừng lại đây, dừng ở ô Bắt Đầu hoặc mua đứt.</p>${p.coupon > 0 ? '<p class="hint">🏷️ Giá đã giảm 50% nhờ thẻ Giảm Giá.</p>' : ''}`,
-    stack: true,
-    buttons: [
-      ...options.map((o, k) => ({
-        label: `<span>${LEVEL_ICONS[o.level]} Mua kèm ${LEVEL_NAMES[o.level]}</span><span class="btn-meta">${fmtFull(o.cost)} · thuê ${fmt(o.rent)}</span>`,
-        value: o.level,
-        style: k === 0 ? 'blue' : k === 1 ? 'green' : 'primary',
-        disabled: o.cost > p.money,
-      })),
-      { label: 'Bỏ qua', value: 0, style: 'ghost' },
-    ],
+  const g = GROUPS[t.group];
+  const cur = store.state.props[i].owner === p.id ? store.state.props[i].level : 0;
+  const optBy = new Map(options.map((o) => [o.level, o]));
+  const lockBy = new Map(locked.map((o) => [o.level, o]));
+  const affordable = options.filter((o) => o.cost <= p.money);
+  let sel = affordable.length ? affordable[affordable.length - 1].level : 0;
+  const minOpt = options.length ? options[0].level : 0;
+  const mult = festMult(i) * inflation();
+  return humanWait((done) => {
+    const bd = el('div', 'modal-backdrop');
+    const card = el('div', 'modal-card bp-card');
+    card.style.setProperty('--g', g.color);
+    bd.appendChild(card);
+    dom.modalRoot.appendChild(bd);
+    let end = () => {};
+    const finish = (v) => {
+      end();
+      bd.classList.add('closing');
+      setTimeout(() => bd.remove(), 180);
+      done(v);
+    };
+    end = beginPrompt(finish);
+    const lockText = (L) => {
+      if (L === LANDMARK) return cur >= 4 ? '' : 'Cần Khách sạn';
+      const lk = lockBy.get(L);
+      return lk ? `Mở ở vòng ${lk.lap}` : 'Chưa mở';
+    };
+    const render = () => {
+      const o = optBy.get(sel);
+      const cost = o ? o.cost : 0;
+      const rent = o ? r5(o.rent * mult) : 0;
+      const resale = o && sel < LANDMARK ? t.eco.value[sel] * BUYOUT_RATE : 0;
+      const cards = [1, 2, 3, 4, 5].map((L) => {
+        let state;
+        let note = '';
+        if (L <= cur) {
+          state = 'have';
+        } else if (optBy.has(L)) {
+          const oo = optBy.get(L);
+          state = L <= sel ? 'on' : 'off';
+          if (oo.cost > p.money) {
+            state += ' poor';
+            note = '<span class="bp-note">Không đủ tiền</span>';
+          } else {
+            note = `<span class="bp-note">thuê ${fmt(oo.rent)}</span>`;
+          }
+        } else {
+          state = 'lock';
+          note = `<span class="bp-note">🔒 ${lockText(L)}</span>`;
+        }
+        const stamp = state === 'have' ? '<span class="bp-stamp">ĐÃ XÂY</span>' : '';
+        const check = state.startsWith('on') || state === 'have' ? '✔' : '';
+        return `<button type="button" class="bp-lv ${state}${L === LANDMARK ? ' lm' : ''}" data-lv="${L}" ${state.startsWith('on') || state.startsWith('off') ? '' : 'tabindex="-1"'}>
+          ${stamp}${levelArt(L, p.color)}
+          <span class="bp-name">${LEVEL_NAMES[L]}</span>${note}
+          <span class="bp-check">${check}</span>
+        </button>`;
+      }).join('');
+      const fest = festMult(i) > 1 ? ` <span class="bp-tag">🎉 x${festMult(i)}</span>` : '';
+      const label = mode === 'buy' ? 'MUA' : 'XÂY';
+      card.innerHTML = `
+        <div class="bp-head"><div class="bp-title"><span class="bp-group">${esc(g.name)}</span>${esc(t.name)}</div><button type="button" class="bp-x" data-skip aria-label="Bỏ qua">✕</button></div>
+        <div class="bp-sub">${title ? `${esc(title)} · ` : ''}Tiền mặt: <b>${fmtFull(p.money)}</b>${p.coupon > 0 ? ' · 🏷️ đã giảm 50%' : ''}</div>
+        <div class="modal-body"><div class="bp-row">${cards}</div>${winNote(p, i)}</div>
+        <div class="bp-foot">
+          <div class="bp-rent">Tiền thuê: <b>${o ? fmtFull(rent) : '—'}</b>${fest}</div>
+          <button type="button" class="btn bp-buy" data-buy data-hotkey="1" ${o && cost <= p.money ? '' : 'disabled'}>${o ? `${label} VỚI GIÁ ${fmtFull(cost)}` : 'Chọn công trình'}</button>
+          <div class="bp-resale">${o ? (sel >= LANDMARK ? '🔒 Biểu Tượng: không ai mua lại được' : `Người khác có thể mua lại với giá: <b>${fmtFull(resale)}</b>`) : ''}</div>
+          <button type="button" class="bp-skip" data-skip>${mode === 'buy' ? 'Bỏ qua, không mua' : 'Để sau'}</button>
+        </div>`;
+      card.querySelectorAll('.bp-lv.on, .bp-lv.off').forEach((b) => b.addEventListener('click', () => {
+        const L = Number(b.dataset.lv);
+        if (optBy.get(L).cost > p.money) return;
+        sel = L === sel && L > minOpt ? L - 1 : L;
+        Sound.play('click');
+        render();
+      }));
+      card.querySelectorAll('[data-skip]').forEach((b) => b.addEventListener('click', () => {
+        Sound.play('click');
+        finish(0);
+      }));
+      card.querySelector('[data-buy]').addEventListener('click', () => {
+        if (!o || cost > p.money) return;
+        Sound.unlock();
+        Sound.play('click');
+        finish(sel);
+      });
+    };
+    render();
   });
 }
 
+export function purchaseDialog(p, i, options, locked = []) {
+  return buildPicker(p, i, { options, locked, mode: 'buy', title: 'Mua đất' });
+}
+
 export function upgradeDialog(p, i, options, title) {
-  const t = TILES[i];
-  const lm = options.some((o) => o.level === LANDMARK);
-  return openModal({
-    prompt: true,
-    icon: lm ? '🗼' : '🔨',
-    title: `${esc(title)}: ${esc(t.name)}`,
-    sub: `Hiện tại: ${LEVEL_ICONS[store.state.props[i].level]} ${LEVEL_NAMES[store.state.props[i].level]} · Tiền mặt: <b>${fmtFull(p.money)}</b>`,
-    html: `${deedHTML(i)}${lm ? '<p class="hint">🗼 Biểu Tượng tăng mạnh tiền thuê và <b>không thể bị mua đứt</b>.</p>' : ''}`,
-    stack: true,
-    buttons: [
-      ...options.map((o) => ({
-        label: `<span>${LEVEL_ICONS[o.level]} Lên ${LEVEL_NAMES[o.level]}</span><span class="btn-meta">${fmtFull(o.cost)} · thuê ${fmt(o.rent)}</span>`,
-        value: o.level,
-        style: o.level === LANDMARK ? 'gold' : 'green',
-        disabled: o.cost > p.money,
-      })),
-      { label: 'Để sau', value: 0, style: 'ghost' },
-    ],
-  });
+  return buildPicker(p, i, { options, mode: 'upgrade', title });
 }
 
 export function buyoutDialog(p, i, cost) {
@@ -330,7 +402,7 @@ const RULES_HTML = `
       <li>🏁 <b>Bắt Đầu</b>: đi qua nhận $300K; dừng đúng ô được nâng 1 thành phố thêm 1 cấp (kể cả lên Biểu Tượng).</li>
       <li>🏝️ <b>Đảo Hoang</b>: kẹt 3 lượt. Thoát bằng đổ đôi (đi luôn, không thêm lượt) hoặc trả $200K; thẻ Thoát Đảo tự dùng. Hết 3 lượt thì lượt sau tự đi.</li>
       <li>🎉 <b>Lễ Hội Thế Giới</b>: chọn 1 thành phố của mình, tiền thuê x2, các lần sau x3, x4, x5. Mỗi lúc chỉ 1 thành phố tổ chức.</li>
-      <li>🎊 <b>Lễ Hội Đường Phố</b> (ngẫu nhiên): từ một vòng ngẫu nhiên đầu ván, 1 thành phố được tổ chức lễ hội, tiền thuê <b>x2</b> trong <b>2 vòng</b>, sau đó lễ hội chuyển sang thành phố khác.</li>
+      <li>🎊 <b>Lễ Hội Đường Phố</b> (ngẫu nhiên): ngay khi bắt đầu ván, 1 thành phố ngẫu nhiên được tổ chức lễ hội, tiền thuê <b>x2</b> trong <b>2 vòng</b>, sau đó lễ hội chuyển sang thành phố khác.</li>
       <li>✈️ <b>Chuyến Bay Thế Giới</b>: lượt sau trả $50K để bay tới bất kỳ ô nào.</li>
       <li>🏖️ <b>Khu Nghỉ Dưỡng</b> (4 ô): thuê $50K / $100K / $200K theo số khu sở hữu; đủ 4 khu là thắng.</li>
       <li>💸 <b>Thuế</b>: nộp 10% tổng tài sản (tiền mặt + bất động sản).</li>

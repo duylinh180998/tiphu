@@ -224,3 +224,156 @@
   .modal-actions.stack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .modal-body .hint { display: none; }
 }
+
+/* ---------- Bảng chọn công trình dạng thẻ (mua đất / nâng cấp) ---------- */
+.modal-card.bp-card {
+  width: min(720px, 100%);
+  padding: 0 0 14px;
+  color: #1e2148;
+  background: linear-gradient(180deg, #fffdf7, #f6efe0);
+  box-shadow: 0 0 0 4px #fff, 0 30px 80px rgba(0, 0, 0, .45);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.bp-head {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 62px;
+  padding: 8px 56px;
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--g) 85%, #fff), var(--g) 55%, color-mix(in srgb, var(--g) 70%, #000));
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .12);
+}
+.bp-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.05; text-align: center; text-transform: uppercase; letter-spacing: .03em; text-shadow: 0 2px 0 rgba(0, 0, 0, .18); }
+.bp-group { display: block; font-family: var(--font-text); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; opacity: .9; text-shadow: none; }
+.bp-x {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(0, 0, 0, .18);
+}
+.bp-x:hover { background: rgba(0, 0, 0, .3); }
+.bp-sub { flex: none; padding: 8px 16px 0; font-size: 13px; text-align: center; color: #5b5f86; }
+.bp-sub b { color: #1e2148; }
+.bp-card .modal-body { padding: 12px 14px 8px; color: #1e2148; }
+.bp-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.bp-lv {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 4px 26px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 0 0 1.5px #e5dccb, 0 4px 0 #e5dccb;
+  transition: transform .15s, box-shadow .15s, background .15s;
+}
+.bp-lv.on, .bp-lv.off { cursor: pointer; }
+.bp-lv.off:hover, .bp-lv.on:hover { transform: translateY(-3px); }
+.bp-lv.on { background: linear-gradient(180deg, #f0fdf4, #fff); box-shadow: 0 0 0 3px #22c55e, 0 5px 0 #16a34a; }
+.bp-lv.have, .bp-lv.lock, .bp-lv.poor { cursor: default; }
+.bp-lv.have { background: #f1f0ec; }
+.bp-lv.lock, .bp-lv.poor { background: #ece9e2; }
+.bp-lv.lock .bp-art, .bp-lv.poor .bp-art, .bp-lv.have .bp-art { filter: grayscale(1) brightness(1.08) opacity(.75); }
+.bp-art { position: relative; width: 100%; max-width: 110px; aspect-ratio: 1 / 1; display: flex; align-items: flex-end; justify-content: center; }
+.bp-lot { position: absolute; left: 4%; bottom: 0; width: 92%; height: auto; overflow: visible; }
+.bp-lot-top { fill: #cbd5c0; stroke: #fff; stroke-width: 2; }
+.bp-lot-l { fill: #a8b39b; }
+.bp-lot-r { fill: #b9c4ac; }
+.bp-lv.on .bp-lot-top { fill: #9be15d; }
+.bp-lv.on .bp-lot-l { fill: #65a30d; }
+.bp-lv.on .bp-lot-r { fill: #84cc16; }
+.bp-bld { position: relative; z-index: 1; margin-bottom: 18%; line-height: 0; transform: scale(.95); transform-origin: 50% 100%; }
+.bp-lv[data-lv="4"] .bp-bld { transform: scale(.8); }
+.bp-lv.lm .bp-bld { transform: scale(.68); }
+.bp-name { font-weight: 800; font-size: 13.5px; line-height: 1.1; text-align: center; }
+.bp-note { font-size: 11px; font-weight: 700; color: #6b7094; text-align: center; }
+.bp-lv.poor .bp-note { color: #e11d48; }
+.bp-check {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  background: #fff;
+  box-shadow: inset 0 0 0 2px #a3c58a;
+}
+.bp-lv.on .bp-check, .bp-lv.have .bp-check { background: #22c55e; box-shadow: none; }
+.bp-lv.have .bp-check { background: #94a3b8; }
+.bp-lv.lock .bp-check { display: none; }
+.bp-stamp {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 22%;
+  transform: translateX(-50%) rotate(-14deg);
+  padding: 3px 9px;
+  border: 3px solid #0ea5e9;
+  border-radius: 9px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  color: #0284c7;
+  background: rgba(255, 255, 255, .85);
+}
+.bp-foot { flex: none; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 10px 16px 0; }
+.bp-rent { font-size: 17px; }
+.bp-rent b { font-family: var(--font-display); font-size: 22px; }
+.bp-tag { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #ec4899, #f59e0b); vertical-align: middle; }
+.bp-buy {
+  width: min(440px, 100%);
+  justify-content: center;
+  padding: .7em 1.2em;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  color: #fff;
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
+  box-shadow: 0 0 0 4px #fff, 0 6px 0 #075985, 0 12px 24px rgba(2, 132, 199, .35);
+}
+.bp-buy:not(:disabled):hover { transform: translateY(-2px); }
+.bp-buy:not(:disabled):active { transform: translateY(4px); box-shadow: 0 0 0 4px #fff, 0 2px 0 #075985; }
+.bp-resale { font-size: 13.5px; color: #4b5078; }
+.bp-resale b { color: #1e2148; }
+.bp-skip { border: 0; padding: 2px 10px; font: inherit; font-size: 13px; font-weight: 700; color: #6b7094; text-decoration: underline; cursor: pointer; background: none; }
+.bp-card .win-note { margin-top: 10px; }
+@media (max-width: 560px) {
+  .bp-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bp-title { font-size: 21px; }
+  .bp-buy { font-size: 17px; }
+  .bp-rent { font-size: 15px; }
+  .bp-rent b { font-size: 18px; }
+}
+@media (max-height: 560px) {
+  .bp-art { max-width: 74px; }
+  .bp-head { min-height: 48px; }
+  .bp-foot { gap: 4px; }
+}
