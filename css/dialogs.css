@@ -377,3 +377,9 @@
   .bp-head { min-height: 48px; }
   .bp-foot { gap: 4px; }
 }
+/* Mua đứt: thẻ chỉ để xem (không bấm chọn), nút màu cam đỏ */
+div.bp-lv { cursor: default; }
+div.bp-lv.on:hover { transform: none; }
+.bp-buyout { background: linear-gradient(180deg, #fb7185, #e11d48); box-shadow: 0 0 0 4px #fff, 0 6px 0 #9f1239, 0 12px 24px rgba(225, 29, 72, .35); }
+.bp-buyout:not(:disabled):active { box-shadow: 0 0 0 4px #fff, 0 2px 0 #9f1239; }
+.bp-resale { text-align: center; }

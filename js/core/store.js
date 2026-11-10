@@ -64,7 +64,7 @@ export function loadGame() {
   if (!Array.isArray(s.players) || s.players.length < 2 || s.players.length > 4) return null;
   if (!Array.isArray(s.props) || s.props.length !== TILE_COUNT) return null;
   if (typeof s.seed !== 'number' || !s.festival) return null;
-  if (!s.street) s.street = { tile: null, left: 0, next: s.round + 1 }; // bản lưu cũ chưa có Lễ Hội Đường Phố
+  if (!s.street || !Array.isArray(s.street.tiles)) s.street = { tiles: s.street && s.street.tile != null ? [s.street.tile] : [] }; // bản lưu cũ
   return s;
 }
 

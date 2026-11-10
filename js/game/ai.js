@@ -238,6 +238,13 @@ export const AI = {
     return theirs.sort((a, b) => rentOf(b) - rentOf(a))[0];
   },
 
+  /** Dẹp Lễ Hội: xóa lễ hội ở thành phố của đối thủ có tiền thuê cao nhất; không có thì bỏ qua */
+  noFestTarget(p, cands) {
+    const theirs = cands.filter((i) => props()[i].owner != null && props()[i].owner !== p.id);
+    if (!theirs.length) return null;
+    return theirs.sort((x, y) => rentOf(y) - rentOf(x))[0];
+  },
+
   evictTarget(p, cands) {
     const score = (i) => AI.disruptOf(i, props()[i].owner) * 10 + propValue(i) + (AI.gainOf(i, p.id) >= 50 ? 300 : 0);
     return cands.slice().sort((a, b) => score(b) - score(a))[0];
@@ -255,7 +262,7 @@ export const AI = {
         if (groupComplete(t.group, p.id)) s += 260;
         if (pr.level === LANDMARK) s += 420;
         if (store.state.festival.tile === i) s += 220;
-        else if (store.state.street && store.state.street.tile === i) s += 90;
+        else if (store.state.street && (store.state.street.tiles || []).includes(i)) s += 120;
       }
       return s;
     };
@@ -337,6 +344,8 @@ export const AI = {
         return AI.earthquakeTarget(p, d.cands);
       case 'outage':
         return AI.outageTarget(p, d.cands);
+      case 'nofest':
+        return AI.noFestTarget(p, d.cands);
       case 'evict':
         return AI.evictTarget(p, d.cands);
       default:
