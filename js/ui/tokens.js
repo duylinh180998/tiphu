@@ -6,6 +6,7 @@ import { esc } from '../core/util.js';
 import { isCorner, sideOf } from '../data/board.js';
 import { dom, el } from './dom.js';
 import { tileCenter } from './board3d.js';
+import { characterSVG } from './character.js';
 
 let tokenEls = [];
 
@@ -19,10 +20,10 @@ export function buildTokens() {
   tokenEls = s.players.map((p) => {
     const t = el('div', 'token');
     t.style.setProperty('--pc', p.color);
-    // Nhân vật tròn trịa: đầu to mang gương mặt con vật, thân nhỏ có tay, hai bàn chân; nhún nhảy lệch nhịp nhau
+    // Góc nhìn 3D: nhân vật đứng (áo khoác màu người chơi); góc nhìn 2D: huy hiệu tròn mang avatar
     t.innerHTML = `<div class="tk-shadow"></div><div class="tk-bill"><div class="tk-bob"><div class="tk-pawn" style="animation-delay:${(-0.6 * p.id).toFixed(1)}s">` +
       '<div class="tk-feet"><i></i><i></i></div><div class="tk-body"><i class="tk-arm l"></i><i class="tk-arm r"></i></div>' +
-      `<div class="tk-head">${esc(p.avatar)}</div><div class="tk-mark"></div></div></div></div>`;
+      `<div class="tk-head">${esc(p.avatar)}</div><div class="tk-char">${characterSVG(p.avatar, { cash: false, seed: p.id })}</div><div class="tk-mark"></div></div></div></div>`;
     dom.tokens.appendChild(t);
     return t;
   });

@@ -7,6 +7,7 @@ import { esc } from '../core/util.js';
 import { $, $$, el } from './dom.js';
 import { Sound } from './audio.js';
 import { toast } from './fx.js';
+import { characterSVG } from './character.js';
 
 let actions = {};
 const SCREENS = ['menu', 'local', 'online', 'lobby'];
@@ -235,21 +236,30 @@ export function renderLobby(info) {
   const wrap = $('#lobby-seats');
   wrap.innerHTML = '';
   seats.forEach((s, k) => {
+    // Thẻ đứng: ảnh đại diện + dấu ✔ sẵn sàng, băng tên màu ghế, nhân vật ở giữa, nút của chủ phòng và xúc xắc ở đáy
     const c = el('div', `lobby-seat seat-${s.kind}${you === k ? ' you' : ''}`);
     c.style.setProperty('--pc', PLAYER_COLORS[k]);
     const v = SEAT_VIEW[s.kind] || SEAT_VIEW.closed;
     const filled = s.kind === 'host' || s.kind === 'guest';
+    const present = filled || s.kind === 'bot';
+    const avatar = filled ? s.avatar : v.avatar;
     c.innerHTML = `
-      <div class="ls-avatar">${filled ? esc(s.avatar) : v.avatar}</div>
-      <div class="ls-info"><div class="ls-name">${filled ? esc(s.name) : v.name}${you === k ? ' <span class="ls-you">BẠN</span>' : ''}</div><div class="ls-kind">${v.kind}</div></div>`;
+      <div class="ls-top">
+        <div class="ls-avatar">${esc(avatar)}${present ? '<span class="ls-ready">✔</span>' : ''}</div>
+        <div class="ls-banner"><div class="ls-name">${filled ? esc(s.name) : v.name}</div><div class="ls-kind">${v.kind}${you === k ? ' · <b>BẠN</b>' : ''}</div></div>
+      </div>
+      <div class="ls-stage">${present ? characterSVG(avatar, { seed: k }) : `<div class="ls-empty">${s.kind === 'open' ? '?' : '✖'}</div>`}</div>
+      <div class="ls-foot"><span class="ls-act"></span><span class="ls-dice" aria-hidden="true">🎲</span></div>`;
     if (isHost && k > 0) {
-      const b = el('button', 'btn btn-ghost btn-sm', s.kind === 'guest' ? '🚪 Mời ra' : s.kind === 'open' ? '➕ Thêm máy' : s.kind === 'bot' ? '✖ Đóng ghế' : '⏳ Mở ghế');
+      const label = s.kind === 'guest' ? 'Mời ra' : s.kind === 'open' ? 'Thêm máy' : s.kind === 'bot' ? 'Đóng ghế' : 'Mở ghế';
+      const b = el('button', `ls-btn${s.kind === 'open' || s.kind === 'closed' ? ' add' : ''}`, `<i>${s.kind === 'open' || s.kind === 'closed' ? '+' : '−'}</i><span>${label}</span>`);
       b.type = 'button';
+      b.title = label;
       b.addEventListener('click', () => {
         Sound.play('click');
         actions.cycleSeat(k);
       });
-      c.appendChild(b);
+      c.querySelector('.ls-act').appendChild(b);
     }
     wrap.appendChild(c);
   });
