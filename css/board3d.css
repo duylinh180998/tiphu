@@ -670,3 +670,11 @@ body.docked #scene { position: relative; width: 100%; height: var(--scene-h); ov
   animation: cashAmount 1.4s ease-out both;
 }
 @keyframes cashAmount { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.6); } 18% { opacity: 1; transform: translate(-50%, -90%) scale(1.1); } 75% { opacity: 1; transform: translate(-50%, -130%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -170%) scale(.95); } }
+
+/* Quân cờ 3D là nhân vật đứng (js/ui/character.js); 2D vẫn dùng huy hiệu tròn mang avatar */
+.tk-char { display: none !important; }
+.view-3d .tk-char { display: block !important; left: -11px; right: -11px; bottom: -4px; line-height: 0; filter: drop-shadow(0 0 0 #fff) drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
+.view-3d .tk-char .char-svg { display: block; width: 100%; height: auto; }
+.view-3d .tk-head, .view-3d .tk-body, .view-3d .tk-feet { display: none !important; }
+.view-3d .token.active .tk-char { filter: drop-shadow(0 0 5px var(--pc)) drop-shadow(0 0 10px var(--pc)) drop-shadow(0 4px 3px rgba(0, 0, 0, .3)); }
+.view-3d .tk-mark { top: -44px; }
