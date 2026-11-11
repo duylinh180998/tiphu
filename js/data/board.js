@@ -47,7 +47,7 @@ export const TILES = [
   { type: 'city', name: 'London', group: 6, price: 320 },
   { type: 'resort', name: 'Hawaii' },
   { type: 'city', name: 'Los Angeles', group: 7, price: 350 },
-  { type: 'tax', name: 'THUẾ', icon: '💸', sub: '10% tài sản' },
+  { type: 'tax', name: 'THUẾ', icon: '💸', sub: '1% tài sản' },
   { type: 'city', name: 'New York', group: 7, price: 400 },
 ];
 
@@ -85,9 +85,9 @@ export const SPECIAL_DESC = {
   start: 'Đi qua hoặc dừng lại đều nhận <b>$300K</b>. Dừng đúng ô này được trả tiền nâng 1 thành phố của mình thêm <b>1 cấp</b> (kể cả Khách sạn lên Biểu Tượng).',
   island: 'Dừng tại đây bị kẹt <b>3 lượt</b>. Thoát bằng cách đổ xúc xắc đôi (đi luôn nhưng không được thêm lượt) hoặc trả <b>$200K</b>. Thẻ Thoát Đảo tự dùng khi rơi vào đây. Hết 3 lượt thì lượt sau tự đi.',
   festival: 'Chọn 1 thành phố của bạn tổ chức Lễ Hội: tiền thuê <b>x2</b>, các lần tổ chức sau tăng lên <b>x3, x4, x5</b>. Mỗi lúc chỉ 1 thành phố tổ chức Lễ Hội.',
-  tour: 'Lượt kế tiếp được trả <b>$50K</b> để bay tới bất kỳ ô nào trên bàn cờ (bay qua Bắt Đầu vẫn nhận lương). Không đủ tiền thì lắc như thường.',
+  tour: 'Lượt kế tiếp được trả <b>$50K</b> để bay tới bất kỳ ô nào trên bàn cờ, kể cả thành phố người khác đã mua: trả tiền thuê rồi được mua đứt nếu đủ tiền (bay qua Bắt Đầu vẫn nhận lương). Không đủ tiền thì lắc như thường.',
   chance: 'Rút 1 thẻ Cơ Hội: Động Đất, Mất Điện, Dẹp Lễ Hội, Cưỡng Chế Bán, Giảm Giá 50%, Thoát Đảo Hoang, Vé Lễ Hội, Vé Máy Bay, Về Bắt Đầu hoặc Đắm Tàu.',
-  tax: 'Nộp <b>10% tổng tài sản</b> (tiền mặt + giá trị bất động sản) cho ngân hàng.',
+  tax: 'Nộp <b>1% tổng tài sản</b> (tiền mặt + giá trị bất động sản) cho ngân hàng.',
 };
 
 export const CHANCE_CARDS = [

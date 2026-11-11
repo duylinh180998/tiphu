@@ -22,7 +22,7 @@ export const ISLAND_TURNS = 3;
 export const TOUR_FEE = 50;
 export const RESORT_PRICE = 200;
 export const RESORT_RENTS = [0, 50, 100, 200, 400]; // 4 khu = thắng ngay
-export const TAX_RATE = 0.1; // 10% tổng tài sản (tiền mặt + bất động sản)
+export const TAX_RATE = 0.01; // 1% tổng tài sản (tiền mặt + bất động sản)
 export const SELL_RATE = 0.5;
 export const BUYOUT_RATE = 2;
 export const FESTIVAL_MULTS = [2, 3, 4, 5];

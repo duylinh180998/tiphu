@@ -299,7 +299,7 @@ async function tourSegment(p) {
   for (let i = 0; i < TILE_COUNT; i++) if (i !== TOUR_TILE) cands.push(i);
   const target = await ask(p, 'tour', {
     cands,
-    title: `✈️ <b>Chuyến Bay Thế Giới</b> — chọn ô muốn bay tới (phí ${fmt(TOUR_FEE)})`,
+    title: `✈️ <b>Chuyến Bay Thế Giới</b> — chọn ô muốn bay tới (phí ${fmt(TOUR_FEE)}), kể cả thành phố của người khác để mua đứt`,
     cancelLabel: '🎲 Không bay, lắc xúc xắc',
   });
   if (target == null) {
@@ -741,7 +741,7 @@ async function onTax(p) {
     log(`💸 ${pn(p)} không có tài sản để nộp thuế.`);
     return;
   }
-  log(`💸 ${pn(p)} nộp thuế 10% tổng tài sản (${fmtFull(worth)}): ${fmtFull(amt)}.`, 'pay');
+  log(`💸 ${pn(p)} nộp thuế 1% tổng tài sản (${fmtFull(worth)}): ${fmtFull(amt)}.`, 'pay');
   view.tileFx(TAX_TILE, `-${fmt(amt)}`, 'loss');
   await pay(p, amt, null);
 }

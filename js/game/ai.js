@@ -182,6 +182,8 @@ export const AI = {
           s -= rent * 0.5;
           const canBuyout = t.type === 'city' && pr.level < LANDMARK;
           if (myCrit.has(j) && canBuyout && cash - rent >= buyoutCost(j)) s += 900;
+          // Bay tới thành phố của đối thủ để mua đứt khi dư tiền và hoàn thành được nhóm màu / chặn đối thủ
+          else if (canBuyout && cash - rent - buyoutCost(j) >= reserve) s += AI.gainOf(j, p.id) * 0.8 + AI.disruptOf(j, pr.owner) * 0.8 - 10;
         }
       } else if (t.type === 'start') {
         s += 35 + (hasUpgradable ? 15 : 0);

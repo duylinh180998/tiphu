@@ -442,9 +442,9 @@ const RULES_HTML = `
       <li>🏝️ <b>Đảo Hoang</b>: kẹt 3 lượt. Thoát bằng đổ đôi (đi luôn, không thêm lượt) hoặc trả $200K; thẻ Thoát Đảo tự dùng. Hết 3 lượt thì lượt sau tự đi.</li>
       <li>🎉 <b>Lễ Hội Thế Giới</b>: chọn 1 thành phố của mình, tiền thuê x2, các lần sau x3, x4, x5. Mỗi lúc chỉ 1 thành phố tổ chức.</li>
       <li>🎊 <b>Lễ Hội Đường Phố</b>: khi bắt đầu ván có <b>2 thành phố ngẫu nhiên</b> tổ chức lễ hội (tiền thuê <b>x2</b>); cứ sau <b>5 vòng</b> lại thêm 1 thành phố. Lễ hội kéo dài tới khi bị thẻ 🚫 Dẹp Lễ Hội xóa.</li>
-      <li>✈️ <b>Chuyến Bay Thế Giới</b>: lượt sau trả $50K để bay tới bất kỳ ô nào.</li>
+      <li>✈️ <b>Chuyến Bay Thế Giới</b>: lượt sau trả $50K để bay tới bất kỳ ô nào, kể cả thành phố người khác đã mua (trả tiền thuê, rồi được mua đứt nếu đủ tiền).</li>
       <li>🏖️ <b>Khu Nghỉ Dưỡng</b> (4 ô): thuê $50K / $100K / $200K theo số khu sở hữu; đủ 4 khu là thắng.</li>
-      <li>💸 <b>Thuế</b>: nộp 10% tổng tài sản (tiền mặt + bất động sản).</li>
+      <li>💸 <b>Thuế</b>: nộp 1% tổng tài sản (tiền mặt + bất động sản).</li>
     </ul>
     <h4>🎁 Thẻ Cơ Hội</h4>
     <ul>

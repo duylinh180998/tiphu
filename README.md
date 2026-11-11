@@ -101,9 +101,9 @@ Mỗi người bắt đầu với **$2M**. Ván đấu mặc định **30 vòng*
 - 🏝️ **Đảo Hoang**: kẹt **3 lượt**. Đầu lượt chọn trả **$200K** hoặc lắc tìm **đôi** (ra đôi thì đi luôn nhưng không được thêm lượt). Thẻ Thoát Đảo Hoang tự dùng khi rơi vào đảo. Hết 3 lượt thì lượt sau tự đi, không mất tiền.
 - 🎉 **Lễ Hội Thế Giới**: chọn 1 thành phố của mình tổ chức Lễ Hội — tiền thuê **x2**, các lần tổ chức sau **x3, x4, x5**. Mỗi lúc chỉ có 1 thành phố tổ chức.
 - 🎊 **Lễ Hội Đường Phố**: khi bắt đầu ván có **2 thành phố ngẫu nhiên** tổ chức lễ hội — tiền thuê **x2**; cứ sau **5 vòng** (đầu vòng 6, 11, 16…) lại thêm 1 thành phố ngẫu nhiên. Lễ hội kéo dài tới khi bị thẻ Cơ Hội 🚫 **Dẹp Lễ Hội** xóa. Nếu thành phố đó đang có Lễ Hội Thế Giới thì chỉ tính hệ số Lễ Hội Thế Giới.
-- ✈️ **Chuyến Bay Thế Giới**: lượt kế tiếp trả **$50K** để bay tới bất kỳ ô nào (bay qua Bắt Đầu vẫn nhận lương); không đủ tiền thì lắc như thường.
+- ✈️ **Chuyến Bay Thế Giới**: lượt kế tiếp trả **$50K** để bay tới bất kỳ ô nào, **kể cả thành phố người khác đã mua** (trả tiền thuê rồi được mua đứt nếu đủ tiền; bay qua Bắt Đầu vẫn nhận lương); không đủ tiền thì lắc như thường.
 - 🏖️ **Khu Nghỉ Dưỡng** (ô 4, 12, 20, 28): giá $200K, không xây nhà; thuê **$50K / $100K / $200K** khi chủ sở hữu 1 / 2 / 3 khu. Đủ 4 khu là **thắng ngay**.
-- 💸 **Thuế** (ô 30): nộp **10% tổng tài sản** (tiền mặt + giá trị bất động sản).
+- 💸 **Thuế** (ô 30): nộp **1% tổng tài sản** (tiền mặt + giá trị bất động sản).
 
 ### 🎁 Thẻ Cơ Hội (ô 6, 14, 22)
 | Thẻ | Tác dụng |
